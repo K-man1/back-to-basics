@@ -87,24 +87,3 @@ export async function createReview(
     throw new Error(`failed to record review: ${error.message}`);
   }
 }
-
-// Sum of every points_delta across all reviews of a student's projects.
-// Feeds the student's displayed points balance.
-export async function sumReviewPointsForStudent(studentId: string): Promise<number> {
-  const supabase = supabaseAdmin();
-
-  const { data: projectRows } = await supabase
-    .from("projects")
-    .select("id")
-    .eq("student_id", studentId);
-
-  const projectIds = (projectRows ?? []).map((p) => p.id);
-  if (!projectIds.length) return 0;
-
-  const { data: reviewRows } = await supabase
-    .from("reviews")
-    .select("points_delta")
-    .in("project_id", projectIds);
-
-  return (reviewRows ?? []).reduce((sum, r) => sum + (r.points_delta ?? 0), 0);
-}

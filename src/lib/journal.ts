@@ -32,28 +32,6 @@ export async function getEntriesForProject(
   return (data as JournalEntry[] | null) ?? [];
 }
 
-// All reviewer grades across a student's projects — feeds computePoints.
-// Ungraded entries are excluded: grading happens in one review pass, so an
-// ungraded entry is "pending", not a freebie.
-export async function gradesForStudent(studentId: string): Promise<number[]> {
-  const supabase = supabaseAdmin();
-  const { data: projectRows } = await supabase
-    .from("projects")
-    .select("id")
-    .eq("student_id", studentId);
-
-  const projectIds = (projectRows ?? []).map((p) => p.id);
-  if (!projectIds.length) return [];
-
-  const { data: entryRows } = await supabase
-    .from("journal_entries")
-    .select("points")
-    .in("project_id", projectIds)
-    .not("points", "is", null);
-
-  return (entryRows ?? []).map((e) => e.points as number);
-}
-
 export interface JournalEntryFields {
   title: string;
   reflection: string;
@@ -121,13 +99,18 @@ export async function updateJournalEntry(
 
   const { data: entry } = await supabase
     .from("journal_entries")
-    .select("id, project_id")
+    .select("id, project_id, points")
     .eq("id", entryId)
     .maybeSingle();
   if (!entry) throw new Error("journal entry not found");
 
   const owned = await getProjectForStudent(entry.project_id, studentId);
   if (!owned) throw new Error("not your journal entry");
+
+  // A graded entry is locked: its grade already counted, so the text can't be
+  // swapped out from under it. The UI hides the edit control, but enforce it
+  // here too so a hand-crafted POST can't bypass it.
+  if (entry.points != null) throw new Error("graded entries can't be edited");
 
   await supabase.from("journal_entries").update(fields).eq("id", entryId);
 }
@@ -140,13 +123,17 @@ export async function deleteJournalEntry(
 
   const { data: entry } = await supabase
     .from("journal_entries")
-    .select("id, project_id")
+    .select("id, project_id, points")
     .eq("id", entryId)
     .maybeSingle();
   if (!entry) return;
 
   const owned = await getProjectForStudent(entry.project_id, studentId);
   if (!owned) throw new Error("not your journal entry");
+
+  // Same lock as editing — a graded entry can't be deleted out from under its
+  // counted grade.
+  if (entry.points != null) throw new Error("graded entries can't be deleted");
 
   await supabase.from("journal_entries").delete().eq("id", entryId);
 }

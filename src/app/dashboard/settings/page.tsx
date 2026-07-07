@@ -1,7 +1,6 @@
 import { auth, signOut } from "@/auth";
 import { getOrCreateStudent } from "@/lib/students";
 import { getHackatimeStatsForStudent } from "@/lib/hackatime";
-import { approvedPointsForStudent } from "@/lib/points";
 
 export default async function SettingsPage() {
   const session = await auth();
@@ -15,9 +14,6 @@ export default async function SettingsPage() {
   );
 
   const hackatimeStats = await getHackatimeStatsForStudent(student);
-
-  // Only points from approved projects — what the student has actually earned.
-  const points = await approvedPointsForStudent(student);
 
   return (
     <div className="flex flex-col gap-8">
