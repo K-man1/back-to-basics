@@ -50,7 +50,6 @@ export default async function ReviewQueuePage() {
   return (
     <div className="flex flex-col gap-8">
       <div>
-        <p className="text-sm text-zinc-500">[*] review</p>
         <h1 className="mt-2 text-2xl tracking-tight text-zinc-900">Review queue</h1>
         <p className="mt-1 text-xs text-zinc-500">
           {projects.length} project{projects.length === 1 ? "" : "s"} awaiting review

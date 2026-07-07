@@ -7,6 +7,7 @@ import { getOrCreateStudent } from "@/lib/students";
 import {
   createProject,
   updateProject,
+  deleteProject,
   submitProject,
   getProjectForStudent,
   missingSubmitRequirements,
@@ -51,6 +52,13 @@ export async function createProjectAction(formData: FormData) {
   const project = await createProject(studentId, fields);
   revalidatePath("/dashboard");
   redirect(`/dashboard/projects/${project.id}`);
+}
+
+export async function deleteProjectAction(projectId: string) {
+  const studentId = await requireStudentId();
+  await deleteProject(projectId, studentId);
+  revalidatePath("/dashboard");
+  redirect("/dashboard");
 }
 
 export async function updateProjectAction(projectId: string, formData: FormData) {

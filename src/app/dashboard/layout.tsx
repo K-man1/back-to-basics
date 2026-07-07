@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { auth, signIn, signOut } from "@/auth";
+import { auth, signIn } from "@/auth";
 import { getOrCreateStudent } from "@/lib/students";
 import { getReviewerForStudent } from "@/lib/reviewers";
+import { approvedPointsForStudent } from "@/lib/points";
 
 export default async function DashboardLayout({
   children,
@@ -48,6 +49,10 @@ export default async function DashboardLayout({
 
   const reviewer = await getReviewerForStudent(student.id);
 
+  // Points the student has actually been awarded (approved projects only),
+  // shown in the nav so it's visible from every screen.
+  const points = await approvedPointsForStudent(student);
+
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col px-6 py-12">
       <nav className="flex items-center justify-between border-b border-zinc-200 pb-4">
@@ -70,16 +75,13 @@ export default async function DashboardLayout({
             Settings
           </Link>
         </div>
-        <form
-          action={async () => {
-            "use server";
-            await signOut();
-          }}
+        <Link
+          href="/dashboard/settings"
+          className="text-sm text-zinc-900 hover:text-zinc-600"
+          title="Points earned so far"
         >
-          <button type="submit" className="text-sm text-zinc-500 hover:text-zinc-900">
-            Sign out
-          </button>
-        </form>
+          {points} points
+        </Link>
       </nav>
       <div className="flex-1 py-10">{children}</div>
     </div>

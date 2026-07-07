@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { getOrCreateStudent } from "@/lib/students";
-import { getProjectForStudent, missingSubmitRequirements } from "@/lib/projects";
+import { getProjectById, missingSubmitRequirements } from "@/lib/projects";
 import { getHackatimeStatsForStudent } from "@/lib/hackatime";
 import { getEntriesForProject } from "@/lib/journal";
 import { GRADE_MAX, computePoints, pointsRange } from "@/lib/currency";
@@ -10,6 +10,7 @@ import { getLatestReviewForProject } from "@/lib/reviews";
 import {
   submitProjectAction,
   updateProjectAction,
+  deleteProjectAction,
   addJournalEntryAction,
   updateJournalEntryAction,
   deleteJournalEntryAction,
@@ -41,10 +42,107 @@ export default async function ProjectDetailPage({
     session.user.email ?? null,
   );
 
-  const project = await getProjectForStudent(id, student.id);
+  // Unscoped fetch: any signed-in student can open a project by its link. The
+  // owner gets the full editable page; everyone else gets a read-only view
+  // (rendered below), so a shared link "just works" without exposing controls.
+  const project = await getProjectById(id);
   if (!project) notFound();
 
+  const isOwner = project.student_id === student.id;
   const entries = await getEntriesForProject(project.id);
+
+  // Shared read-only view: overview + journal only. Reviewer feedback, grades,
+  // points and every edit/submit/delete control stay hidden from non-owners.
+  if (!isOwner) {
+    return (
+      <div className="flex flex-col gap-8">
+        <div>
+          <Link
+            href="/dashboard/explore"
+            className="text-xs text-zinc-500 hover:text-zinc-900"
+          >
+            ← Explore
+          </Link>
+          <h1 className="mt-2 text-2xl tracking-tight text-zinc-900">
+            {project.title}
+          </h1>
+          <p className="mt-1 text-xs text-zinc-400">Shared project</p>
+        </div>
+
+        <section className="border border-zinc-200 bg-white p-4">
+          <h2 className="text-sm font-semibold text-zinc-900">
+            Project details
+          </h2>
+          <p className="mt-3 text-sm text-zinc-700">
+            {project.description || (
+              <span className="text-zinc-400">No description yet.</span>
+            )}
+          </p>
+          <dl className="mt-4 grid grid-cols-[6.5rem_1fr] gap-y-2 text-sm">
+            <dt className="text-zinc-500">GitHub</dt>
+            <dd className="min-w-0">
+              {project.github_url ? (
+                <a
+                  href={project.github_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="break-all underline hover:text-zinc-600"
+                >
+                  {project.github_url}
+                </a>
+              ) : (
+                <span className="text-zinc-400">not set</span>
+              )}
+            </dd>
+            <dt className="text-zinc-500">Demo</dt>
+            <dd className="min-w-0">
+              {project.demo_url ? (
+                <a
+                  href={project.demo_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="break-all underline hover:text-zinc-600"
+                >
+                  {project.demo_url}
+                </a>
+              ) : (
+                <span className="text-zinc-400">not set</span>
+              )}
+            </dd>
+          </dl>
+        </section>
+
+        <section className="flex flex-col gap-4">
+          <h2 className="text-sm font-semibold text-zinc-900">
+            Learning journal
+            {entries.length ? (
+              <span className="ml-2 font-normal text-zinc-400">
+                {entries.length}
+              </span>
+            ) : null}
+          </h2>
+          {entries.length ? (
+            <div className="flex flex-col divide-y divide-zinc-200 border border-zinc-200 bg-white">
+              {entries.map((entry) => (
+                <JournalEntryCard
+                  key={entry.id}
+                  title={entry.title}
+                  reflection={entry.reflection}
+                  lapseUrl={entry.lapse_url}
+                  githubLinks={entry.github_links}
+                  createdAtLabel={new Date(entry.created_at).toLocaleString()}
+                  pointsLabel=""
+                  graded={entry.points != null}
+                />
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-zinc-500">No journal entries yet.</p>
+          )}
+        </section>
+      </div>
+    );
+  }
 
   const latestReview = await getLatestReviewForProject(project.id);
 
@@ -98,8 +196,8 @@ export default async function ProjectDetailPage({
                 className="rounded border border-zinc-900 px-4 py-2 text-sm text-zinc-900 transition-colors hover:bg-zinc-900 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-300 disabled:text-zinc-400 disabled:hover:bg-transparent disabled:hover:text-zinc-400"
               >
                 {project.status === "changes_requested"
-                  ? "Resubmit for review"
-                  : "Submit for review"}
+                  ? "Resubmit"
+                  : "Submit"}
               </button>
             </form>
           ) : null}
@@ -139,16 +237,16 @@ export default async function ProjectDetailPage({
           <p className="text-2xl text-zinc-900">
             {(linkedSeconds / 3600).toFixed(2)}
           </p>
-          <p className="mt-1 text-zinc-500">hours logged</p>
+          <p className="mt-1 text-zinc-500">Hours Logged</p>
         </div>
         <div className="p-4">
           <p className="text-2xl text-zinc-900">{entries.length}</p>
-          <p className="mt-1 text-zinc-500">journal entries</p>
+          <p className="mt-1 text-zinc-500">Journal Entries</p>
         </div>
         <div className="p-4">
           <p className="text-2xl text-zinc-900">{projectPoints}</p>
           <p className="mt-1 text-zinc-500">
-            {hasPending ? `pts so far — up to ${cap} after review` : "pts earned"}
+            {hasPending ? `pts so far — up to ${cap} after review` : "Points Earned"}
           </p>
         </div>
       </div>
@@ -158,6 +256,7 @@ export default async function ProjectDetailPage({
         hackatimeProjects={hackatimeStats?.projects ?? []}
         hackatimeConnected={!!student.hackatime_access_token}
         updateAction={updateProjectAction.bind(null, project.id)}
+        deleteAction={deleteProjectAction.bind(null, project.id)}
       />
 
       <section className="flex flex-col gap-4">
@@ -171,18 +270,8 @@ export default async function ProjectDetailPage({
             ) : null}
           </h2>
           <p className="mt-1 text-xs text-zinc-500">
-            This is what reviewers grade. Whenever something clicks while you
-            build — a concept, a bug you finally understood, a tradeoff you
-            made — write it down here in your own words. Keep{" "}
-            <a
-              href="https://lapse.hackclub.com"
-              target="_blank"
-              rel="noreferrer"
-              className="underline hover:text-zinc-900"
-            >
-              Lapse
-            </a>{" "}
-            recording while you work so your timelapse backs it up.
+            Journal what you learn here. Make sure to be in-depth as the better journal, the more points.
+            See the full guide at ________
           </p>
         </div>
 
@@ -219,7 +308,7 @@ export default async function ProjectDetailPage({
           </div>
         ) : (
           <p className="text-sm text-zinc-500">
-            No entries yet — you need at least one before you can submit.
+            You need at least one journal before you submit.
           </p>
         )}
       </section>

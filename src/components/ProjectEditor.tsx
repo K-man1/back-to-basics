@@ -10,11 +10,13 @@ export default function ProjectEditor({
   hackatimeProjects,
   hackatimeConnected = false,
   updateAction,
+  deleteAction,
 }: {
   project: Project;
   hackatimeProjects: HackatimeProjectStat[];
   hackatimeConnected?: boolean;
   updateAction: (formData: FormData) => Promise<void>;
+  deleteAction: () => Promise<void>;
 }) {
   const [editing, setEditing] = useState(false);
 
@@ -85,6 +87,27 @@ export default function ProjectEditor({
             )}
           </dd>
         </dl>
+
+        <form
+          action={deleteAction}
+          onSubmit={(e) => {
+            if (
+              !confirm(
+                "Delete this project? This also removes its journal entries and can't be undone.",
+              )
+            ) {
+              e.preventDefault();
+            }
+          }}
+          className="mt-4 border-t border-zinc-100 pt-3"
+        >
+          <button
+            type="submit"
+            className="text-xs text-zinc-500 underline hover:text-red-600"
+          >
+            Delete project
+          </button>
+        </form>
       </section>
     );
   }

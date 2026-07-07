@@ -119,6 +119,21 @@ export async function updateProject(
     .eq("student_id", studentId);
 }
 
+// Student-scoped delete: the student_id filter means a student can only ever
+// remove their own project. journal_entries and reviews fk to projects with
+// ON DELETE CASCADE, so those rows go with it.
+export async function deleteProject(
+  projectId: string,
+  studentId: string,
+): Promise<void> {
+  const supabase = supabaseAdmin();
+  await supabase
+    .from("projects")
+    .delete()
+    .eq("id", projectId)
+    .eq("student_id", studentId);
+}
+
 // A student can submit a fresh draft or resubmit one a reviewer bounced back
 // with changes_requested. Approved/rejected are terminal, so the status filter
 // refuses those transitions server-side even if the UI slips.

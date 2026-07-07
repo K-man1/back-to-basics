@@ -28,7 +28,6 @@ export default async function MyProjectsPage() {
   return (
     <div className="flex flex-col gap-8">
       <div>
-        <p className="text-sm text-zinc-500">[*] my projects</p>
         <h1 className="mt-2 text-2xl tracking-tight text-zinc-900">Projects</h1>
       </div>
 

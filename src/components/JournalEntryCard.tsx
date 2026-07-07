@@ -27,8 +27,10 @@ export default function JournalEntryCard({
   createdAtLabel: string;
   pointsLabel: string;
   graded: boolean;
-  updateAction: (formData: FormData) => Promise<{ error: string } | undefined>;
-  deleteAction: () => Promise<void>;
+  // Omitted when the viewer isn't the project owner (shared read-only view):
+  // the entry renders without edit/delete controls.
+  updateAction?: (formData: FormData) => Promise<{ error: string } | undefined>;
+  deleteAction?: () => Promise<void>;
 }) {
   const [editing, setEditing] = useState(false);
 
@@ -44,7 +46,7 @@ export default function JournalEntryCard({
         <span className="shrink-0 text-xs text-zinc-500">{pointsLabel}</span>
       </div>
 
-      {editing ? (
+      {editing && updateAction ? (
         <div className="mt-3">
           <JournalEntryForm
             initialTitle={title}
@@ -86,7 +88,7 @@ export default function JournalEntryCard({
               ))}
             </div>
           ) : null}
-          {!graded ? (
+          {updateAction && deleteAction && !graded ? (
             <div className="mt-3 flex items-center gap-3 text-xs">
               <button
                 type="button"
