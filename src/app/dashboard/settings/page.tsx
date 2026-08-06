@@ -1,6 +1,8 @@
 import { auth, signOut } from "@/auth";
 import { getOrCreateStudent } from "@/lib/students";
 import { getHackatimeStatsForStudent } from "@/lib/hackatime";
+import { getKeyInfo, listReposByStudent } from "@/lib/attribution";
+import AttributionInstall from "@/components/AttributionInstall";
 
 export default async function SettingsPage() {
   const session = await auth();
@@ -13,7 +15,11 @@ export default async function SettingsPage() {
     session.user.email ?? null,
   );
 
-  const hackatimeStats = await getHackatimeStatsForStudent(student);
+  const [hackatimeStats, attributionKey, attributionRepos] = await Promise.all([
+    getHackatimeStatsForStudent(student),
+    getKeyInfo(student.id),
+    listReposByStudent(student.id),
+  ]);
 
   return (
     <div className="flex flex-col gap-8">
@@ -38,6 +44,28 @@ export default async function SettingsPage() {
           >
             Connect Hackatime
           </a>
+        ) : null}
+      </div>
+
+      <div className="rounded border border-zinc-200 p-4 text-sm">
+        <p className="font-semibold text-zinc-900">Code authorship</p>
+        <div className="mt-1">
+          <AttributionInstall
+            installed={!!attributionKey}
+            keyPrefix={attributionKey?.key_prefix ?? null}
+            lastUsedAt={attributionKey?.last_used_at ?? null}
+          />
+        </div>
+        {attributionRepos.length > 0 ? (
+          <p className="mt-3 text-xs text-zinc-500">
+            Tracking {attributionRepos.length}{" "}
+            {attributionRepos.length === 1 ? "repository" : "repositories"}:{" "}
+            {attributionRepos
+              .slice(0, 6)
+              .map((r) => r.name)
+              .join(", ")}
+            {attributionRepos.length > 6 ? ", …" : ""}
+          </p>
         ) : null}
       </div>
 

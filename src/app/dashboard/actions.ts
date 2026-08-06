@@ -13,6 +13,7 @@ import {
   missingSubmitRequirements,
   ProjectFields,
 } from "@/lib/projects";
+import { normalizeExternalUrl } from "@/lib/url";
 import {
   createJournalEntry,
   updateJournalEntry,
@@ -37,9 +38,10 @@ function fieldsFromFormData(formData: FormData): ProjectFields {
   return {
     title: String(formData.get("title") ?? "").trim(),
     description: String(formData.get("description") ?? "").trim() || null,
-    github_url: String(formData.get("github_url") ?? "").trim() || null,
-    demo_url: String(formData.get("demo_url") ?? "").trim() || null,
+    github_url: normalizeExternalUrl(String(formData.get("github_url") ?? "")),
+    demo_url: normalizeExternalUrl(String(formData.get("demo_url") ?? "")),
     hackatime_project_names: formData.getAll("hackatime_project").map(String),
+    attribution_repo_keys: formData.getAll("attribution_repo").map(String),
   };
 }
 

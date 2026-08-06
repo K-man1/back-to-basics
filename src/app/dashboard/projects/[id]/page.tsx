@@ -4,9 +4,17 @@ import { auth } from "@/auth";
 import { getOrCreateStudent } from "@/lib/students";
 import { getProjectById, missingSubmitRequirements } from "@/lib/projects";
 import { getHackatimeStatsForStudent } from "@/lib/hackatime";
-import { getEntriesForProject } from "@/lib/journal";
-import { GRADE_MAX, computePoints, pointsRange } from "@/lib/currency";
-import { getLatestReviewForProject } from "@/lib/reviews";
+import { getKeyInfo, latestVerifications, listReposByStudent } from "@/lib/attribution";
+import {
+  getEntriesForProject,
+  gradedLevels,
+  axisScores,
+  type JournalEntry,
+} from "@/lib/journal";
+import { awardedCoins, bestCaseCoins } from "@/lib/currency";
+import { LEVEL_MAX, scoreBreakdown } from "@/lib/rubric";
+import { getReviewsForProject } from "@/lib/reviews";
+import { normalizeExternalUrl } from "@/lib/url";
 import {
   submitProjectAction,
   updateProjectAction,
@@ -16,6 +24,7 @@ import {
   deleteJournalEntryAction,
 } from "@/app/dashboard/actions";
 import ProjectEditor from "@/components/ProjectEditor";
+import AttributionSummary from "@/components/AttributionSummary";
 import AddJournalEntry from "@/components/AddJournalEntry";
 import JournalEntryCard from "@/components/JournalEntryCard";
 import StatusBadge, { statusLabel } from "@/components/StatusBadge";
@@ -25,6 +34,17 @@ const REVIEW_ACCENT: Record<string, string> = {
   changes_requested: "border-orange-300",
   rejected: "border-red-300",
 };
+
+// "D2 · E3 · P1 → 1/3" once graded, so a student can see which axis capped the
+// entry without opening the rubric. Older entries graded before the three axes
+// existed only have a level.
+function levelLabel(entry: JournalEntry): string {
+  const scores = axisScores(entry);
+  if (scores) return scoreBreakdown(scores);
+  return entry.level != null
+    ? `graded ${entry.level}/${LEVEL_MAX}`
+    : "pending review";
+}
 
 export default async function ProjectDetailPage({
   params,
@@ -51,8 +71,13 @@ export default async function ProjectDetailPage({
   const isOwner = project.student_id === student.id;
   const entries = await getEntriesForProject(project.id);
 
+  // Older rows can hold a schemeless URL ("github.com/me/repo"), which as an
+  // href resolves relative to /dashboard. Normalize on the way out too.
+  const githubHref = normalizeExternalUrl(project.github_url);
+  const demoHref = normalizeExternalUrl(project.demo_url);
+
   // Shared read-only view: overview + journal only. Reviewer feedback, grades,
-  // points and every edit/submit/delete control stay hidden from non-owners.
+  // coins and every edit/submit/delete control stay hidden from non-owners.
   if (!isOwner) {
     return (
       <div className="flex flex-col gap-8">
@@ -81,9 +106,9 @@ export default async function ProjectDetailPage({
           <dl className="mt-4 grid grid-cols-[6.5rem_1fr] gap-y-2 text-sm">
             <dt className="text-zinc-500">GitHub</dt>
             <dd className="min-w-0">
-              {project.github_url ? (
+              {githubHref ? (
                 <a
-                  href={project.github_url}
+                  href={githubHref}
                   target="_blank"
                   rel="noreferrer"
                   className="break-all underline hover:text-zinc-600"
@@ -96,9 +121,9 @@ export default async function ProjectDetailPage({
             </dd>
             <dt className="text-zinc-500">Demo</dt>
             <dd className="min-w-0">
-              {project.demo_url ? (
+              {demoHref ? (
                 <a
-                  href={project.demo_url}
+                  href={demoHref}
                   target="_blank"
                   rel="noreferrer"
                   className="break-all underline hover:text-zinc-600"
@@ -115,11 +140,6 @@ export default async function ProjectDetailPage({
         <section className="flex flex-col gap-4">
           <h2 className="text-sm font-semibold text-zinc-900">
             Learning journal
-            {entries.length ? (
-              <span className="ml-2 font-normal text-zinc-400">
-                {entries.length}
-              </span>
-            ) : null}
           </h2>
           {entries.length ? (
             <div className="flex flex-col divide-y divide-zinc-200 border border-zinc-200 bg-white">
@@ -132,7 +152,7 @@ export default async function ProjectDetailPage({
                   githubLinks={entry.github_links}
                   createdAtLabel={new Date(entry.created_at).toLocaleString()}
                   pointsLabel=""
-                  graded={entry.points != null}
+                  graded={entry.level != null}
                 />
               ))}
             </div>
@@ -144,25 +164,39 @@ export default async function ProjectDetailPage({
     );
   }
 
-  const latestReview = await getLatestReviewForProject(project.id);
+  const reviews = await getReviewsForProject(project.id);
+  const latestReview = reviews[0] ?? null; // ordered newest-first
+  const reviewAdjustment = reviews.reduce((sum, r) => sum + r.points_delta, 0);
 
   const hackatimeStats = await getHackatimeStatsForStudent(student);
+
+  const [attributionRepos, attributionKey] = await Promise.all([
+    listReposByStudent(student.id),
+    getKeyInfo(student.id),
+  ]);
+  const linkedRepos = attributionRepos.filter((r) =>
+    project.attribution_repo_keys.includes(r.repo_key),
+  );
+  const attributionVerifications = await latestVerifications(
+    linkedRepos.map((r) => r.id),
+  );
 
   const linkedSeconds = (hackatimeStats?.projects ?? [])
     .filter((p) => project.hackatime_project_names.includes(p.name))
     .reduce((sum, p) => sum + p.total_seconds, 0);
 
   // Ungraded entries are worth nothing until the review pass, so pre-review
-  // this sits at the hours floor — the cap shows what journaling can unlock.
-  const grades = entries
-    .filter((e) => e.points != null)
-    .map((e) => e.points as number);
-  const hasPending = entries.some((e) => e.points == null);
-  const projectPoints = computePoints(linkedSeconds, grades);
-  const { cap } = pointsRange(linkedSeconds);
+  // this sits at zero — `best` shows what the entries already written can
+  // unlock if they all grade out at the top level.
+  const graded = gradedLevels(entries);
+  const hasPending = entries.some((e) => e.level == null);
+  const projectCoins = awardedCoins(linkedSeconds, graded, reviewAdjustment);
+  const best = Math.round(bestCaseCoins(linkedSeconds, entries.length));
 
   const canSubmit =
-    project.status === "draft" || project.status === "changes_requested";
+    project.status === "draft" ||
+    project.status === "changes_requested" ||
+    project.status === "approved";
   const missing = canSubmit
     ? missingSubmitRequirements(project, entries.length)
     : [];
@@ -195,9 +229,7 @@ export default async function ProjectDetailPage({
                 disabled={missing.length > 0}
                 className="rounded border border-zinc-900 px-4 py-2 text-sm text-zinc-900 transition-colors hover:bg-zinc-900 hover:text-white disabled:cursor-not-allowed disabled:border-zinc-300 disabled:text-zinc-400 disabled:hover:bg-transparent disabled:hover:text-zinc-400"
               >
-                {project.status === "changes_requested"
-                  ? "Resubmit"
-                  : "Submit"}
+                {project.status === "draft" ? "Submit" : "Resubmit"}
               </button>
             </form>
           ) : null}
@@ -219,20 +251,29 @@ export default async function ProjectDetailPage({
             <h2 className="font-semibold text-zinc-900">Reviewer feedback</h2>
             <span className="shrink-0 text-xs text-zinc-500">
               {statusLabel(latestReview.decision)}
-              {latestReview.points_delta !== 0
-                ? ` · ${latestReview.points_delta > 0 ? "+" : ""}${latestReview.points_delta} pts`
+            </span>
+          </div>
+          <div className="mt-3 flex items-baseline gap-2">
+            <span className="text-2xl text-zinc-900">{projectCoins}</span>
+            <span className="text-xs text-zinc-500">
+              coins awarded for this project
+              {hasPending
+                ? ` so far — up to ${best} if every entry grades out at the top level`
+                : ""}
+              {reviewAdjustment !== 0
+                ? ` (includes a ${reviewAdjustment > 0 ? "+" : ""}${reviewAdjustment} reviewer adjustment)`
                 : ""}
             </span>
           </div>
           {latestReview.feedback ? (
-            <p className="mt-2 text-zinc-700">{latestReview.feedback}</p>
+            <p className="mt-3 text-zinc-700">{latestReview.feedback}</p>
           ) : (
-            <p className="mt-2 text-zinc-500">No written feedback.</p>
+            <p className="mt-3 text-zinc-500">No written feedback.</p>
           )}
         </section>
       ) : null}
 
-      <div className="grid grid-cols-3 divide-x divide-zinc-200 border border-zinc-200 bg-white text-sm">
+      <div className="grid grid-cols-2 divide-x divide-zinc-200 border border-zinc-200 bg-white text-sm">
         <div className="p-4">
           <p className="text-2xl text-zinc-900">
             {(linkedSeconds / 3600).toFixed(2)}
@@ -243,35 +284,49 @@ export default async function ProjectDetailPage({
           <p className="text-2xl text-zinc-900">{entries.length}</p>
           <p className="mt-1 text-zinc-500">Journal Entries</p>
         </div>
-        <div className="p-4">
-          <p className="text-2xl text-zinc-900">{projectPoints}</p>
-          <p className="mt-1 text-zinc-500">
-            {hasPending ? `pts so far — up to ${cap} after review` : "Points Earned"}
-          </p>
-        </div>
       </div>
 
       <ProjectEditor
         project={project}
         hackatimeProjects={hackatimeStats?.projects ?? []}
         hackatimeConnected={!!student.hackatime_access_token}
+        attributionRepos={attributionRepos}
+        attributionInstalled={!!attributionKey}
         updateAction={updateProjectAction.bind(null, project.id)}
         deleteAction={deleteProjectAction.bind(null, project.id)}
       />
+
+      {linkedRepos.length > 0 ? (
+        <section className="border border-zinc-200 bg-white p-4">
+          <h2 className="text-sm font-semibold text-zinc-900">Code authorship</h2>
+          <div className="mt-3">
+            <AttributionSummary
+              repos={linkedRepos}
+              verifications={attributionVerifications}
+            />
+          </div>
+        </section>
+      ) : null}
 
       <section className="flex flex-col gap-4">
         <div>
           <h2 className="text-sm font-semibold text-zinc-900">
             Learning journal
-            {entries.length ? (
-              <span className="ml-2 font-normal text-zinc-400">
-                {entries.length}
-              </span>
-            ) : null}
           </h2>
           <p className="mt-1 text-xs text-zinc-500">
-            Journal what you learn here. Make sure to be in-depth as the better journal, the more points.
-            See the full guide at ________
+            Journal what you learn here. Every entry is scored 0–{LEVEL_MAX} on
+            three axes — how much you had to figure out, how well you explain
+            it, and whether your evidence backs it — and the entry is worth the
+            lowest of the three.{" "}
+            <a
+              href="/rubric"
+              target="_blank"
+              rel="noreferrer"
+              className="underline hover:text-zinc-900"
+            >
+              Read the rubric
+            </a>{" "}
+            before you write.
           </p>
         </div>
 
@@ -287,12 +342,8 @@ export default async function ProjectDetailPage({
                 lapseUrl={entry.lapse_url}
                 githubLinks={entry.github_links}
                 createdAtLabel={new Date(entry.created_at).toLocaleString()}
-                pointsLabel={
-                  entry.points != null
-                    ? `graded ${entry.points}/${GRADE_MAX}`
-                    : "pending review"
-                }
-                graded={entry.points != null}
+                pointsLabel={levelLabel(entry)}
+                graded={entry.level != null}
                 updateAction={updateJournalEntryAction.bind(
                   null,
                   project.id,

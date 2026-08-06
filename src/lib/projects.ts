@@ -8,6 +8,10 @@ export interface Project {
   github_url: string | null;
   demo_url: string | null;
   hackatime_project_names: string[];
+  // Which repos tracked by the ai-attribution Claude Code plugin count toward
+  // this project. Stores repo_key values rather than names, since a student
+  // can have several checkouts sharing a folder name.
+  attribution_repo_keys: string[];
   status: "draft" | "submitted" | "approved" | "changes_requested" | "rejected";
   created_at: string;
 }
@@ -39,6 +43,7 @@ export interface ProjectFields {
   github_url?: string | null;
   demo_url?: string | null;
   hackatime_project_names?: string[];
+  attribution_repo_keys?: string[];
 }
 
 export async function listProjectsByStudent(studentId: string): Promise<Project[]> {

@@ -3,22 +3,33 @@
 import { useState } from "react";
 import ProjectFormFields from "@/components/ProjectFormFields";
 import type { Project } from "@/lib/projects";
+import { normalizeExternalUrl } from "@/lib/url";
 import type { HackatimeProjectStat } from "@/lib/hackatime";
+import type { AttributionRepo } from "@/lib/attribution";
 
 export default function ProjectEditor({
   project,
   hackatimeProjects,
   hackatimeConnected = false,
+  attributionRepos = [],
+  attributionInstalled = false,
   updateAction,
   deleteAction,
 }: {
   project: Project;
   hackatimeProjects: HackatimeProjectStat[];
   hackatimeConnected?: boolean;
+  attributionRepos?: AttributionRepo[];
+  attributionInstalled?: boolean;
   updateAction: (formData: FormData) => Promise<void>;
   deleteAction: () => Promise<void>;
 }) {
   const [editing, setEditing] = useState(false);
+
+  // A schemeless URL ("github.com/me/repo") in an href is relative, so it would
+  // resolve against /dashboard/... instead of leaving the site.
+  const githubHref = normalizeExternalUrl(project.github_url);
+  const demoHref = normalizeExternalUrl(project.demo_url);
 
   if (!editing) {
     return (
@@ -43,9 +54,9 @@ export default function ProjectEditor({
         <dl className="mt-4 grid grid-cols-[6.5rem_1fr] gap-y-2 text-sm">
           <dt className="text-zinc-500">GitHub</dt>
           <dd className="min-w-0">
-            {project.github_url ? (
+            {githubHref ? (
               <a
-                href={project.github_url}
+                href={githubHref}
                 target="_blank"
                 rel="noreferrer"
                 className="break-all underline hover:text-zinc-600"
@@ -58,9 +69,9 @@ export default function ProjectEditor({
           </dd>
           <dt className="text-zinc-500">Demo</dt>
           <dd className="min-w-0">
-            {project.demo_url ? (
+            {demoHref ? (
               <a
-                href={project.demo_url}
+                href={demoHref}
                 target="_blank"
                 rel="noreferrer"
                 className="break-all underline hover:text-zinc-600"
@@ -126,6 +137,8 @@ export default function ProjectEditor({
           project={project}
           hackatimeProjects={hackatimeProjects}
           hackatimeConnected={hackatimeConnected}
+          attributionRepos={attributionRepos}
+          attributionInstalled={attributionInstalled}
         />
         <div className="mt-4 flex gap-2">
           <button

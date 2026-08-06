@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { getOrCreateStudent } from "@/lib/students";
 import { getHackatimeStatsForStudent } from "@/lib/hackatime";
+import { getKeyInfo, listReposByStudent } from "@/lib/attribution";
 import { createProjectAction } from "@/app/dashboard/actions";
 import ProjectFormFields from "@/components/ProjectFormFields";
 
@@ -14,7 +15,11 @@ export default async function NewProjectPage() {
     session.user.name ?? null,
     session.user.email ?? null,
   );
-  const hackatimeStats = await getHackatimeStatsForStudent(student);
+  const [hackatimeStats, attributionRepos, attributionKey] = await Promise.all([
+    getHackatimeStatsForStudent(student),
+    listReposByStudent(student.id),
+    getKeyInfo(student.id),
+  ]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -30,6 +35,8 @@ export default async function NewProjectPage() {
         <ProjectFormFields
           hackatimeProjects={hackatimeStats?.projects ?? []}
           hackatimeConnected={!!student.hackatime_access_token}
+          attributionRepos={attributionRepos}
+          attributionInstalled={!!attributionKey}
         />
         <button
           type="submit"

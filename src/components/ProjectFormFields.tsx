@@ -1,4 +1,6 @@
+import AttributionRepoPicker from "@/components/AttributionRepoPicker";
 import HackatimeProjectPicker from "@/components/HackatimeProjectPicker";
+import type { AttributionRepo } from "@/lib/attribution";
 import type { HackatimeProjectStat } from "@/lib/hackatime";
 import type { Project } from "@/lib/projects";
 
@@ -6,13 +8,22 @@ export default function ProjectFormFields({
   project,
   hackatimeProjects,
   hackatimeConnected = false,
+  attributionRepos = [],
+  attributionInstalled = false,
 }: {
   project?: Pick<
     Project,
-    "title" | "description" | "github_url" | "demo_url" | "hackatime_project_names"
+    | "title"
+    | "description"
+    | "github_url"
+    | "demo_url"
+    | "hackatime_project_names"
+    | "attribution_repo_keys"
   >;
   hackatimeProjects: HackatimeProjectStat[];
   hackatimeConnected?: boolean;
+  attributionRepos?: AttributionRepo[];
+  attributionInstalled?: boolean;
 }) {
   return (
     <div className="flex flex-col gap-3 text-sm">
@@ -61,6 +72,15 @@ export default function ProjectFormFields({
           projects={hackatimeProjects}
           initialSelected={project?.hackatime_project_names ?? []}
           connected={hackatimeConnected}
+        />
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <p>Code repositories</p>
+        <AttributionRepoPicker
+          repos={attributionRepos}
+          initialSelected={project?.attribution_repo_keys ?? []}
+          installed={attributionInstalled}
         />
       </div>
     </div>

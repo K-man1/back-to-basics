@@ -7,14 +7,19 @@ import { getOrCreateStudent, getStudentById } from "@/lib/students";
 import { getReviewerForStudent, ALLOW_SELF_REVIEW } from "@/lib/reviewers";
 import { getReviewsForProject } from "@/lib/reviews";
 import { getProjectById } from "@/lib/projects";
+import { normalizeExternalUrl } from "@/lib/url";
 import { getHackatimeStatsForStudent } from "@/lib/hackatime";
-import { getEntriesForProject } from "@/lib/journal";
+import { latestVerifications, listReposByKeys } from "@/lib/attribution";
+import AttributionSummary from "@/components/AttributionSummary";
+import { getEntriesForProject, gradedLevels, axisScores } from "@/lib/journal";
+import { AXES, LEVEL_MAX, scoreBreakdown, limitingAxes } from "@/lib/rubric";
+import RubricTable from "@/components/RubricTable";
 import {
   parseGithubBlobLink,
   fetchGithubSnippet,
   GithubSnippet,
 } from "@/lib/github";
-import { GRADE_MAX } from "@/lib/currency";
+import { awardedCoins } from "@/lib/currency";
 import {
   submitReviewAction,
   gradeEntryAction,
@@ -47,6 +52,16 @@ export default async function ReviewDetailPage({
 
   const journalEntries = await getEntriesForProject(project.id);
 
+  // Scoped to the project owner, so a reviewer only ever sees the repos that
+  // student linked to this project — never their whole tracked list.
+  const attributionRepos = await listReposByKeys(
+    project.student_id,
+    project.attribution_repo_keys,
+  );
+  const attributionVerifications = await latestVerifications(
+    attributionRepos.map((r) => r.id),
+  );
+
   // Expand GitHub permalinks with a line anchor into inline snippets so
   // grading doesn't require tab-hopping. Fetched per unique link; anything
   // unparseable or unfetchable just stays a plain link.
@@ -73,8 +88,13 @@ export default async function ReviewDetailPage({
     project.status === "submitted" && (ALLOW_SELF_REVIEW || !isOwnProject);
   const canGrade = ALLOW_SELF_REVIEW || !isOwnProject;
 
-  const gradedCount = journalEntries.filter((e) => e.points != null).length;
+  const graded = gradedLevels(journalEntries);
+  const gradedCount = graded.length;
   const ungradedCount = journalEntries.length - gradedCount;
+
+  // What the current grades are worth for this project, before the reviewer's
+  // own coin adjustment (that's a live form input, so it can't fold in here).
+  const projectCoins = awardedCoins(linkedSeconds, graded);
 
   return (
     <div className="flex flex-col gap-8">
@@ -100,9 +120,9 @@ export default async function ReviewDetailPage({
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-sm font-semibold text-zinc-900">Project</h2>
           <div className="flex gap-2 text-xs">
-            {project.github_url ? (
+            {normalizeExternalUrl(project.github_url) ? (
               <a
-                href={project.github_url}
+                href={normalizeExternalUrl(project.github_url)!}
                 target="_blank"
                 rel="noreferrer"
                 className="rounded border border-zinc-300 px-2.5 py-1 text-zinc-600 transition-colors hover:border-zinc-900 hover:text-zinc-900"
@@ -110,9 +130,9 @@ export default async function ReviewDetailPage({
                 GitHub ↗
               </a>
             ) : null}
-            {project.demo_url ? (
+            {normalizeExternalUrl(project.demo_url) ? (
               <a
-                href={project.demo_url}
+                href={normalizeExternalUrl(project.demo_url)!}
                 target="_blank"
                 rel="noreferrer"
                 className="rounded border border-zinc-300 px-2.5 py-1 text-zinc-600 transition-colors hover:border-zinc-900 hover:text-zinc-900"
@@ -144,23 +164,59 @@ export default async function ReviewDetailPage({
             </p>
             <p className="text-xs text-zinc-500">entries graded</p>
           </div>
+          <div>
+            <p className="text-xl text-zinc-900">{projectCoins}</p>
+            <p className="text-xs text-zinc-500">coins from grades</p>
+          </div>
         </div>
+
+        {attributionRepos.length > 0 ? (
+          <div className="mt-4 border-t border-zinc-200 pt-3">
+            <p className="text-xs font-semibold text-zinc-900">
+              Code authorship
+            </p>
+            <div className="mt-2">
+              <AttributionSummary
+                repos={attributionRepos}
+                verifications={attributionVerifications}
+                forReviewer
+              />
+            </div>
+          </div>
+        ) : null}
       </section>
 
       <section className="flex flex-col gap-4">
-        <div>
+        <div className="flex flex-wrap items-baseline justify-between gap-3">
           <h2 className="text-sm font-semibold text-zinc-900">
             Learning journal
           </h2>
-          <p className="mt-1 text-xs text-zinc-500">
-            What the student says they learned, in their own words — this is
-            what you&apos;re judging. Check it against their timelapse and
-            code, then grade each entry.
-          </p>
+          <a
+            href="/rubric"
+            target="_blank"
+            rel="noreferrer"
+            className="text-xs text-zinc-500 underline hover:text-zinc-900"
+          >
+            what the student sees ↗
+          </a>
         </div>
 
+        {/* The rubric sits inside the grading screen, collapsed. A reviewer who
+            has to leave the page to check a band grades from memory instead. */}
+        <details className="border border-zinc-200 bg-white">
+          <summary className="cursor-pointer list-none p-4 text-sm text-zinc-900 marker:content-none">
+            <span className="text-zinc-400">▸</span> Rubric — three gate
+            ladders, entry level is the lowest of the three
+          </summary>
+          <div className="border-t border-zinc-200 p-4">
+            <RubricTable />
+          </div>
+        </details>
+
         {journalEntries.length ? (
-          journalEntries.map((entry) => (
+          journalEntries.map((entry) => {
+            const scores = axisScores(entry);
+            return (
             <div key={entry.id} className="border border-zinc-200 bg-white">
               <div className="p-4">
                 <div className="flex items-start justify-between gap-3">
@@ -174,14 +230,16 @@ export default async function ReviewDetailPage({
                   </div>
                   <span
                     className={`shrink-0 rounded border px-2 py-0.5 text-xs ${
-                      entry.points != null
+                      entry.level != null
                         ? "border-green-300 text-green-700"
                         : "border-amber-300 text-amber-700"
                     }`}
                   >
-                    {entry.points != null
-                      ? `${entry.points}/${GRADE_MAX}`
-                      : "ungraded"}
+                    {scores
+                      ? scoreBreakdown(scores)
+                      : entry.level != null
+                        ? `${entry.level}/${LEVEL_MAX}`
+                        : "ungraded"}
                   </span>
                 </div>
                 <div className="prose-journal mt-2 text-sm text-zinc-700">
@@ -232,7 +290,8 @@ export default async function ReviewDetailPage({
 
                 {!entry.lapse_url && !entry.github_links.length ? (
                   <p className="mt-2 text-xs text-amber-600">
-                    No timelapse or code linked — grade skeptically.
+                    No timelapse or code linked — nothing here points at the
+                    claim, so Proof can&apos;t clear Gate 2 on the repo alone.
                   </p>
                 ) : null}
               </div>
@@ -240,34 +299,59 @@ export default async function ReviewDetailPage({
               {canGrade ? (
                 <form
                   action={gradeEntryAction.bind(null, project.id, entry.id)}
-                  className="flex flex-wrap items-center gap-3 border-t border-zinc-200 bg-zinc-50 px-4 py-3"
+                  className="border-t border-zinc-200 bg-zinc-50 px-4 py-3"
                 >
-                  <label className="flex items-center gap-2 text-xs text-zinc-600">
-                    Grade 0–{GRADE_MAX}
-                    <input
-                      type="number"
-                      name="points"
-                      min="0"
-                      max={GRADE_MAX}
-                      step="1"
-                      defaultValue={entry.points ?? ""}
-                      placeholder="—"
-                      className="w-16 rounded border border-zinc-300 bg-white p-1.5 text-sm"
-                    />
-                  </label>
-                  <button
-                    type="submit"
-                    className="rounded border border-zinc-900 px-3 py-1.5 text-xs text-zinc-900 transition-colors hover:bg-zinc-900 hover:text-white"
-                  >
-                    {entry.points != null ? "Regrade" : "Grade"}
-                  </button>
-                  <span className="text-xs text-zinc-400">
-                    higher = deeper journal
-                  </span>
+                  {/* One select per axis, each option being that axis's own
+                      level wording — the reviewer is picking off the rubric,
+                      not typing a number they'd have to justify later. */}
+                  <div className="flex flex-col gap-2">
+                    {AXES.map((axis) => (
+                      <label
+                        key={axis.key}
+                        className="flex flex-wrap items-center gap-2 text-xs text-zinc-600"
+                      >
+                        <span className="w-28 shrink-0">{axis.name}</span>
+                        <select
+                          name={axis.key}
+                          required
+                          defaultValue={scores?.[axis.key] ?? ""}
+                          className="min-w-0 flex-1 rounded border border-zinc-300 bg-white p-1.5 text-sm"
+                        >
+                          <option value="" disabled>
+                            —
+                          </option>
+                          {axis.levels.map((summary, level) => (
+                            <option key={level} value={level}>
+                              {level} — {summary}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    ))}
+                  </div>
+                  <div className="mt-3 flex flex-wrap items-center gap-3">
+                    <button
+                      type="submit"
+                      className="rounded border border-zinc-900 px-3 py-1.5 text-xs text-zinc-900 transition-colors hover:bg-zinc-900 hover:text-white"
+                    >
+                      {entry.level != null ? "Regrade" : "Grade"}
+                    </button>
+                    <span className="text-xs text-zinc-400">
+                      entry level = the lowest of the three
+                      {scores
+                        ? ` · now ${scoreBreakdown(scores)}, capped by ${limitingAxes(
+                            scores,
+                          )
+                            .map((a) => a.name)
+                            .join(" and ")}`
+                        : ""}
+                    </span>
+                  </div>
                 </form>
               ) : null}
             </div>
-          ))
+            );
+          })
         ) : (
           <p className="text-sm text-zinc-500">
             No journal entries for this project.
@@ -284,12 +368,17 @@ export default async function ReviewDetailPage({
             <h2 className="text-sm font-semibold text-zinc-900">
               Record a decision
             </h2>
+            <p className="mt-1 text-xs text-zinc-500">
+              These grades award this project{" "}
+              <span className="text-zinc-900">{projectCoins}</span> coins
+              (before any adjustment below).
+            </p>
             {ungradedCount > 0 ? (
               <p className="mt-1 text-xs text-amber-600">
                 {ungradedCount} of {journalEntries.length}{" "}
                 {journalEntries.length === 1 ? "entry is" : "entries are"} still
-                ungraded — grades set the journal points, so grade everything
-                above first.
+                ungraded — entry levels set the whole payout, so grade
+                everything above first.
               </p>
             ) : null}
           </div>
@@ -321,7 +410,7 @@ export default async function ReviewDetailPage({
 
           <label className="flex flex-col gap-1 text-sm">
             <span className="text-zinc-600">
-              Points adjustment (negative to deflate, blank for none)
+              Coin adjustment (negative to deflate, blank for none)
             </span>
             <input
               type="number"
@@ -359,7 +448,7 @@ export default async function ReviewDetailPage({
                   <span>{statusLabel(review.decision)}</span>
                   <span>
                     {review.points_delta >= 0 ? "+" : ""}
-                    {review.points_delta} pts ·{" "}
+                    {review.points_delta} coins ·{" "}
                     {new Date(review.created_at).toLocaleDateString()}
                   </span>
                 </div>
