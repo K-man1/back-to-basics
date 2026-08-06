@@ -46,7 +46,7 @@ const FAQS = [
   },
   {
     q: "What's a learning journal?",
-    a: "The learning journal is a collection of entries you write as you learn more programming concepts. Reviewers will grade these journals and award points as you learn how to write code yourself. You will be encouraged to use Lapse and reference code you wrote.",
+    a: "The learning journal is a collection of entries you write as you learn more programming concepts. Reviewers will grade these journals and award coins as you learn how to write code yourself. You will be encouraged to use Lapse and reference code you wrote.",
   },
   {
     q: "What's Lapse?",

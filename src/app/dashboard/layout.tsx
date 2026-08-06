@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { auth, signIn } from "@/auth";
 import { getOrCreateStudent } from "@/lib/students";
 import { getReviewerForStudent } from "@/lib/reviewers";
-import { approvedPointsForStudent } from "@/lib/points";
+import { approvedCoinsForStudent } from "@/lib/balance";
 
 export default async function DashboardLayout({
   children,
@@ -49,9 +49,9 @@ export default async function DashboardLayout({
 
   const reviewer = await getReviewerForStudent(student.id);
 
-  // Points the student has actually been awarded (approved projects only),
+  // Coins the student has actually been awarded (approved projects only),
   // shown in the nav so it's visible from every screen.
-  const points = await approvedPointsForStudent(student);
+  const coins = await approvedCoinsForStudent(student);
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col px-6 py-12">
@@ -78,9 +78,9 @@ export default async function DashboardLayout({
         <Link
           href="/dashboard/settings"
           className="text-sm text-zinc-900 hover:text-zinc-600"
-          title="Points earned so far"
+          title="Coins earned so far"
         >
-          {points} points
+          {coins} coins
         </Link>
       </nav>
       <div className="flex-1 py-10">{children}</div>

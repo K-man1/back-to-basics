@@ -1,4 +1,5 @@
-import PointsCalculator from "@/components/PointsCalculator";
+import Link from "next/link";
+import CoinCalculator from "@/components/CoinCalculator";
 
 export default function ShopPage() {
   return (
@@ -13,15 +14,16 @@ export default function ShopPage() {
       </div>
 
       <div>
-        <h2 className="text-sm font-semibold text-zinc-900">
-          Points calculator
-        </h2>
+        <h2 className="text-sm font-semibold text-zinc-900">Coin calculator</h2>
         <p className="mt-1 max-w-md text-xs text-zinc-500">
-          Estimate what a project could earn. Points are a placeholder — the
-          name and final weighting aren&apos;t decided yet.
+          Estimate what a project could earn.{" "}
+          <Link href="/coins" className="underline hover:text-zinc-900">
+            How coins are calculated
+          </Link>
+          .
         </p>
         <div className="mt-4 max-w-md">
-          <PointsCalculator />
+          <CoinCalculator />
         </div>
       </div>
     </div>

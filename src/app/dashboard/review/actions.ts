@@ -45,13 +45,16 @@ export async function gradeEntryAction(
     throw new Error("you can't grade your own project");
   }
 
-  const raw = String(formData.get("points") ?? "").trim();
-  const points = raw ? Number.parseInt(raw, 10) : 0;
-  if (!Number.isFinite(points) || points < 0) {
-    throw new Error("points must be a non-negative whole number");
-  }
+  // One score per rubric axis. NaN from a blank select is caught by
+  // gradeEntry's range check, so a half-filled form can't grade an entry.
+  const axisScore = (name: string) =>
+    Number.parseInt(String(formData.get(name) ?? "").trim(), 10);
 
-  await gradeEntry(entryId, projectId, points);
+  await gradeEntry(entryId, projectId, {
+    depth: axisScore("depth"),
+    explanation: axisScore("explanation"),
+    proof: axisScore("proof"),
+  });
 
   revalidatePath(`/dashboard/review/${projectId}`);
   revalidatePath(`/dashboard/projects/${projectId}`);
@@ -79,7 +82,7 @@ export async function submitReviewAction(projectId: string, formData: FormData) 
   const rawDelta = String(formData.get("points_delta") ?? "").trim();
   const pointsDelta = rawDelta ? Number.parseInt(rawDelta, 10) : 0;
   if (!Number.isFinite(pointsDelta)) {
-    throw new Error("points adjustment must be a whole number");
+    throw new Error("coin adjustment must be a whole number");
   }
 
   await createReview(reviewerId, projectId, decision as ReviewDecision, feedback, pointsDelta);

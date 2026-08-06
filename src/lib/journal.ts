@@ -1,10 +1,16 @@
 import { supabaseAdmin } from "@/lib/supabase";
-import { GRADE_MAX } from "@/lib/currency";
+import {
+  AXES,
+  LEVEL_MAX,
+  entryLevel,
+  isValidLevel,
+  type AxisScores,
+} from "@/lib/rubric";
 import { getProjectForStudent } from "@/lib/projects";
 
 // A student-authored journal entry. Students write these on the project page
 // while they build (with Lapse recording the session); a reviewer later grades
-// each entry's learning value into points.
+// each entry's learning value into coins.
 export interface JournalEntry {
   id: string;
   project_id: string;
@@ -15,9 +21,34 @@ export interface JournalEntry {
   // skeptically rather than the form refusing them.
   lapse_url: string | null;
   github_links: string[];
-  // Graded by a reviewer (null = ungraded).
-  points: number | null;
+  // Graded by a reviewer (null = ungraded). The three rubric axes are scored
+  // 0-3 each and set together in one action; level is MIN(...) of them, stored
+  // rather than derived so the scoring history survives a rubric edit.
+  depth: number | null;
+  explanation: number | null;
+  proof: number | null;
+  level: number | null;
   created_at: string;
+}
+
+// The graded levels a project's coins are computed from. Ungraded entries are
+// worth nothing until the review pass.
+export function gradedLevels(entries: JournalEntry[]): number[] {
+  return entries
+    .filter((e) => e.level != null)
+    .map((e) => e.level as number);
+}
+
+// Axis scores of a graded entry, for the UI that renders the breakdown.
+export function axisScores(entry: JournalEntry): AxisScores | null {
+  if (entry.depth == null || entry.explanation == null || entry.proof == null) {
+    return null;
+  }
+  return {
+    depth: entry.depth,
+    explanation: entry.explanation,
+    proof: entry.proof,
+  };
 }
 
 export async function getEntriesForProject(
@@ -99,7 +130,7 @@ export async function updateJournalEntry(
 
   const { data: entry } = await supabase
     .from("journal_entries")
-    .select("id, project_id, points")
+    .select("id, project_id, level")
     .eq("id", entryId)
     .maybeSingle();
   if (!entry) throw new Error("journal entry not found");
@@ -110,7 +141,7 @@ export async function updateJournalEntry(
   // A graded entry is locked: its grade already counted, so the text can't be
   // swapped out from under it. The UI hides the edit control, but enforce it
   // here too so a hand-crafted POST can't bypass it.
-  if (entry.points != null) throw new Error("graded entries can't be edited");
+  if (entry.level != null) throw new Error("graded entries can't be edited");
 
   await supabase.from("journal_entries").update(fields).eq("id", entryId);
 }
@@ -123,7 +154,7 @@ export async function deleteJournalEntry(
 
   const { data: entry } = await supabase
     .from("journal_entries")
-    .select("id, project_id, points")
+    .select("id, project_id, level")
     .eq("id", entryId)
     .maybeSingle();
   if (!entry) return;
@@ -133,26 +164,32 @@ export async function deleteJournalEntry(
 
   // Same lock as editing — a graded entry can't be deleted out from under its
   // counted grade.
-  if (entry.points != null) throw new Error("graded entries can't be deleted");
+  if (entry.level != null) throw new Error("graded entries can't be deleted");
 
   await supabase.from("journal_entries").delete().eq("id", entryId);
 }
 
-// A reviewer grading an entry's learning value. The project_id filter scopes
-// the write to the project being reviewed; the caller (review action) has
-// already checked reviewer status and that it isn't the reviewer's own project.
+// A reviewer grading an entry: all three axes at once, since the entry's level
+// is MIN(...) of them and a missing axis has no meaningful default. The
+// project_id filter scopes the write to the project being reviewed; the caller
+// (review action) has already checked reviewer status and that it isn't the
+// reviewer's own project.
 export async function gradeEntry(
   entryId: string,
   projectId: string,
-  points: number,
+  scores: AxisScores,
 ): Promise<void> {
-  if (!Number.isInteger(points) || points < 0 || points > GRADE_MAX) {
-    throw new Error(`grade must be an integer from 0 to ${GRADE_MAX}`);
+  for (const axis of AXES) {
+    if (!isValidLevel(scores[axis.key])) {
+      throw new Error(
+        `${axis.name} must be an integer from 0 to ${LEVEL_MAX}`,
+      );
+    }
   }
   const supabase = supabaseAdmin();
   await supabase
     .from("journal_entries")
-    .update({ points })
+    .update({ ...scores, level: entryLevel(scores) })
     .eq("id", entryId)
     .eq("project_id", projectId);
 }

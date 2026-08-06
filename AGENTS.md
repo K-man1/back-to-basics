@@ -33,10 +33,12 @@ Stack:
     (draft/submitted/approved/changes_requested/rejected — mirrors the
     latest review).
   - `journal_entries`: student-authored journal entries (title + markdown
-    `reflection`, reviewer-graded `points`), fk'd to `projects` (NOT
+    `reflection`, reviewer-graded `depth`/`explanation`/`proof` 0-3 each
+    plus the derived `level` = MIN of the three), fk'd to `projects` (NOT
     `students` directly — entries are scoped per-project since a student
     can have multiple projects going). Lib: `src/lib/journal.ts`. (Was
-    named `learning_events` in the b2b-report era; renamed.)
+    named `learning_events` in the b2b-report era; renamed. The old
+    holistic `points` 0-5 column is now `level` 0-3.)
   - `reviewers` / `reviews`: reviewer flags and per-project review history.
   Server-only access via `src/lib/supabase.ts` (service role key, bypasses
   RLS — never expose that key to the client).
@@ -62,14 +64,34 @@ Stack:
   real OpenAPI spec at `https://hackatime.hackclub.com/api-docs/v1/swagger.yaml`
   (the human `/docs` pages are client-rendered and return nothing to a plain
   fetch — always check the swagger.yaml directly instead of guessing).
-- Currency (`src/lib/currency.ts`): placeholder "points" formula combining
-  Hackatime seconds coded + graded journal-entry value. Name and real
-  weighting are not decided yet — don't invent either, just keep the
-  placeholder clearly labeled as such in the UI.
+- Coins (`src/lib/currency.ts`, explained + calculated at `/coins`): the
+  currency, from Hackatime seconds coded and reviewer-graded journal levels.
+  `rate = 0.3 + 0.35 * avgLevel`; `coins = rate * sqrt(2 * hours *
+  effectiveEntries)`, where entries past 1/hour are damped to
+  `threshold + sqrt(excess)`. Geometric mean on purpose: hours alone and
+  journals alone both pay zero, and at one entry per 2h the sqrt collapses to
+  `hours`, making coins linear in hours at the intended cadence. Anchor:
+  40h / avg level 2 / 20 entries = 40 coins (~$5 each). No difficulty
+  multiplier (that lives in the rubric's Depth gates). `awardedCoins()` rounds
+  to whole coins for balances; `computeCoins()` stays raw for the calculator.
+  `src/lib/balance.ts` sums approved projects for the nav total. The DB column
+  for the reviewer's manual adjustment is still named `points_delta`.
+- Rubric (`src/lib/rubric.ts`, rendered by `src/components/RubricTable.tsx`,
+  published at `/rubric`): the user's own rubric, three axes — Depth of Topic,
+  Explanation, Proof — each scored 0-3 by a ladder of yes/no gates answered in
+  order, stopping at the first "no". The entry's level is **MIN** of the three,
+  never an average: that's what stops a great write-up on a trivial topic from
+  buying credit, and a fraud flag (proof contradicts the claim) zeroes Proof and
+  therefore the entry. Depth is measured against the stated goal, not the
+  project's overall complexity or the construct's name — the same if-statement
+  can be Level 1 in an ML pipeline and Level 3 in a to-do app. Difficulty
+  scaling belongs in Depth's gates only; don't add difficulty multipliers to the
+  coin formula. Rubric wording lives only in `rubric.ts`; the reviewer form,
+  the student's project page and `/rubric` all render from it.
 - App shell under `/dashboard` (gated by `src/app/dashboard/layout.tsx`):
   My Projects (index), Explore (public approved projects), Review (queue,
   reviewers only), Shop (placeholder — reward mechanism not decided),
-  Settings (points, Hackatime link status, Lapse pointer).
+  Settings (coins, Hackatime link status, Lapse pointer).
 - New-user flow is sign-in first, then forced onboarding. The
   `students.onboarded_at` timestamp is the gate: the dashboard layout
   redirects any signed-in user with `onboarded_at IS NULL` to `/onboarding`,
@@ -83,5 +105,6 @@ Stack:
 
 Open decisions not yet made (flag to the user, don't guess):
 - Real landing page / program copy — `src/app/page.tsx` is placeholder text.
-- What the Shop actually sells / what points are redeemable for.
-- Currency name and exact point-weighting formula.
+- What the Shop actually sells / what coins are redeemable for.
+- The coin constants can still move before launch, but the shape of the
+  formula (geometric mean, sqrt damping) is settled — don't redesign it.

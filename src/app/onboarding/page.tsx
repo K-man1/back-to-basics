@@ -68,7 +68,7 @@ export default async function OnboardingPage({
           </p>
           <p className="mt-1 text-zinc-600">
             Hackatime tracks your coding time per project — it&apos;s how your
-            hours count toward points. If you haven&apos;t set it up yet, follow
+            hours count toward coins. If you haven&apos;t set it up yet, follow
             the editor setup at{" "}
             <a
               href="https://hackatime.hackclub.com"

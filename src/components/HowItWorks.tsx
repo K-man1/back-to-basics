@@ -16,12 +16,12 @@ const STEPS = [
   {
     n: "03",
     title: "Get Reviewed",
-    body: "Reviewers grade the time spent coding and learning, and reward points based off of that.",
+    body: "Reviewers grade the time spent coding and learning, and reward coins based off of that.",
   },
   {
     n: "04",
     title: "Earn Prizes",
-    body: "Use your points to buy stuff in the shop, like 3D printers, Raspberry Pi's and so much more!",
+    body: "Use your coins to buy stuff in the shop, like 3D printers, Raspberry Pi's and so much more!",
   },
 ];
 
