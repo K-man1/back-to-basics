@@ -12,7 +12,7 @@ import { useState } from "react";
 
 const MARKETPLACE_URL =
   process.env.NEXT_PUBLIC_ATTRIBUTION_MARKETPLACE_URL ??
-  "https://github.com/YOUR-ORG/ai-attribution";
+  "https://github.com/K-man1/b2b-hook";
 
 function Command({ children }: { children: string }) {
   const [copied, setCopied] = useState(false);
