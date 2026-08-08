@@ -130,7 +130,7 @@ Stack:
   (`src/lib/app-url.ts`), which prefers `APP_URL`. Auth.js needs `AUTH_URL`
   for the same reason (setting it also flips `trustHost` on).
   `b2b.hackclub.app` is canonical; `back-to-basics.hackclub.app` is a
-  host-matched 301 in `next.config.ts`. Secrets live only in
+  host-matched permanent (308) redirect in `next.config.ts`. Secrets live only in
   `/root/back-to-basics/.env.local` (chmod 600), never in git.
 
 Open decisions not yet made (flag to the user, don't guess):

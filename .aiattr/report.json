@@ -1,6 +1,6 @@
 {
   "coverage": {
-    "files_counted": 75,
+    "files_counted": 78,
     "files_drifted": 2,
     "files_never_observed": 0,
     "files_skipped": 9
@@ -1231,6 +1231,42 @@
       }
     },
     {
+      "lines": 16,
+      "path": "deploy/b2b.service",
+      "tags": {
+        "ai": {
+          "raw": 16,
+          "sig": 14
+        },
+        "human": {
+          "raw": 0,
+          "sig": 0
+        },
+        "unobserved": {
+          "raw": 0,
+          "sig": 0
+        }
+      }
+    },
+    {
+      "lines": 14,
+      "path": "deploy/deploy.sh",
+      "tags": {
+        "ai": {
+          "raw": 14,
+          "sig": 8
+        },
+        "human": {
+          "raw": 0,
+          "sig": 0
+        },
+        "unobserved": {
+          "raw": 0,
+          "sig": 0
+        }
+      }
+    },
+    {
       "lines": 11,
       "path": "src/lib/supabase.ts",
       "tags": {
@@ -1245,6 +1281,24 @@
         "unobserved": {
           "raw": 11,
           "sig": 8
+        }
+      }
+    },
+    {
+      "lines": 10,
+      "path": "src/lib/app-url.ts",
+      "tags": {
+        "ai": {
+          "raw": 10,
+          "sig": 4
+        },
+        "human": {
+          "raw": 0,
+          "sig": 0
+        },
+        "unobserved": {
+          "raw": 0,
+          "sig": 0
         }
       }
     },
@@ -1357,13 +1411,13 @@
       }
     }
   ],
-  "generated": "2026-08-08T01:40:58Z",
-  "head": "950144586bf3685734ad993e66f2399258af6799",
+  "generated": "2026-08-08T01:45:44Z",
+  "head": "f63f18b67f72eb9ca54fd2edb0fa52405c2343f3",
   "plugin_version": "0.5.1",
   "totals": {
     "ai": {
-      "raw": 840,
-      "sig": 717
+      "raw": 880,
+      "sig": 743
     },
     "human": {
       "raw": 53,
