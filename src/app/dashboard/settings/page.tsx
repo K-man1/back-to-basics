@@ -3,6 +3,7 @@ import { getOrCreateStudent } from "@/lib/students";
 import { getHackatimeStatsForStudent } from "@/lib/hackatime";
 import { getKeyInfo, listReposByStudent } from "@/lib/attribution";
 import AttributionInstall from "@/components/AttributionInstall";
+import ThemeToggle from "@/components/ThemeToggle";
 
 export default async function SettingsPage() {
   const session = await auth();
@@ -67,6 +68,11 @@ export default async function SettingsPage() {
             {attributionRepos.length > 6 ? ", …" : ""}
           </p>
         ) : null}
+      </div>
+
+      <div className="rounded border border-zinc-200 p-4 text-sm">
+        <p className="font-semibold text-zinc-900">Appearance</p>
+        <ThemeToggle />
       </div>
 
       <div className="rounded border border-zinc-200 p-4 text-sm">

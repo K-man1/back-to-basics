@@ -4,6 +4,7 @@ import { useState } from "react";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import JournalEntryForm from "@/components/JournalEntryForm";
+import ConfirmButton from "@/components/ConfirmButton";
 
 // One journal entry on the student's own project page: rendered markdown with
 // edit/delete, or the edit form. Once a reviewer has graded the entry it's
@@ -14,7 +15,8 @@ export default function JournalEntryCard({
   lapseUrl,
   githubLinks,
   createdAtLabel,
-  pointsLabel,
+  levelLabel,
+  axisLabel,
   graded,
   updateAction,
   deleteAction,
@@ -25,7 +27,10 @@ export default function JournalEntryCard({
   githubLinks: string[];
   // Pre-formatted on the server so SSR and hydration agree on the timezone.
   createdAtLabel: string;
-  pointsLabel: string;
+  // The grade, split in two: "Level 1 of 3" and the per-axis detail behind it.
+  // Both absent until a reviewer has graded the entry.
+  levelLabel?: string | null;
+  axisLabel?: string | null;
   graded: boolean;
   // Omitted when the viewer isn't the project owner (shared read-only view):
   // the entry renders without edit/delete controls.
@@ -36,14 +41,11 @@ export default function JournalEntryCard({
 
   return (
     <div className="p-4">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-xs text-zinc-500">{createdAtLabel}</p>
-          {!editing ? (
-            <p className="mt-1 text-sm font-semibold text-zinc-900">{title}</p>
-          ) : null}
-        </div>
-        <span className="shrink-0 text-xs text-zinc-500">{pointsLabel}</span>
+      <div>
+        <p className="text-xs text-zinc-500">{createdAtLabel}</p>
+        {!editing ? (
+          <p className="mt-1 text-sm font-semibold text-zinc-900">{title}</p>
+        ) : null}
       </div>
 
       {editing && updateAction ? (
@@ -97,19 +99,25 @@ export default function JournalEntryCard({
               >
                 Edit
               </button>
-              <form
+              <ConfirmButton
+                label="Delete"
+                className="text-zinc-500 underline hover:text-red-600"
+                title="Delete this journal entry?"
+                body="The entry and its evidence links go with it. This can't be undone."
+                confirmLabel="Delete entry"
                 action={deleteAction}
-                onSubmit={(e) => {
-                  if (!confirm("Delete this journal entry?")) e.preventDefault();
-                }}
-              >
-                <button
-                  type="submit"
-                  className="text-zinc-500 underline hover:text-red-600"
-                >
-                  Delete
-                </button>
-              </form>
+              />
+            </div>
+          ) : null}
+
+          {/* The grade sits at the foot of the entry it belongs to, headline
+              number first and the axes spelled out under it. */}
+          {levelLabel ? (
+            <div className="mt-3 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-t border-zinc-100 pt-3 text-xs">
+              <span className="text-zinc-900">{levelLabel}</span>
+              {axisLabel ? (
+                <span className="text-zinc-500">{axisLabel}</span>
+              ) : null}
             </div>
           ) : null}
         </>

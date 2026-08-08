@@ -139,7 +139,12 @@ export async function deleteJournalEntryAction(
   revalidatePath(`/dashboard/projects/${projectId}`);
 }
 
-export async function submitProjectAction(projectId: string) {
+// Returns instead of throwing on an incomplete project: the button is always
+// clickable now, so "you still need a demo URL" is an expected answer to a
+// normal click, not an error boundary.
+export async function submitProjectAction(
+  projectId: string,
+): Promise<{ ok: true } | { ok: false; missing: string[] }> {
   const studentId = await requireStudentId();
 
   const project = await getProjectForStudent(projectId, studentId);
@@ -147,10 +152,11 @@ export async function submitProjectAction(projectId: string) {
 
   const entries = await getEntriesForProject(projectId);
   const missing = missingSubmitRequirements(project, entries.length);
-  if (missing.length) {
-    throw new Error(`Add a ${missing.join(", ")} before submitting.`);
-  }
+  // The dialog lists these as bullets, so hand back the raw labels rather than
+  // a sentence.
+  if (missing.length) return { ok: false, missing };
 
   await submitProject(projectId, studentId);
   revalidatePath(`/dashboard/projects/${projectId}`);
+  return { ok: true };
 }

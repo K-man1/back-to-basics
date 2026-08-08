@@ -36,7 +36,7 @@ export const AXES: RubricAxis[] = [
     measures:
       "How big the reasoning gap was for this specific goal — not the construct's name, and not how complex the surrounding project is.",
     levels: [
-      "No real logic — renaming, formatting, or copy/paste.",
+      "-No real logic -Renaming, formatting, copy/paste",
       "Real logic, but the correct code was a direct, obvious translation of the stated goal.",
       "Something had to be worked out that the goal didn't hand over.",
       "Goes beyond what the goal asked for.",
@@ -195,10 +195,15 @@ export function isValidLevel(value: number): boolean {
   return Number.isInteger(value) && value >= 0 && value <= LEVEL_MAX;
 }
 
-// "D2 · E3 · P1 → 1/3" — the compact form on entry cards, so a student can see
-// which axis capped them without opening anything.
-export function scoreBreakdown(scores: AxisScores): string {
-  return `D${scores.depth} · E${scores.explanation} · P${scores.proof} → ${entryLevel(scores)}/${LEVEL_MAX}`;
+// The headline number an entry earned: "Level 1 of 3".
+export function levelLabel(scores: AxisScores): string {
+  return `Level ${entryLevel(scores)} of ${LEVEL_MAX}`;
+}
+
+// The per-axis detail behind that number, spelled out rather than abbreviated:
+// "Depth of Topic 1 · Explanation 2 · Proof 3".
+export function axisBreakdown(scores: AxisScores): string {
+  return AXES.map((axis) => `${axis.name} ${scores[axis.key]}`).join(" · ");
 }
 
 // The axis (or axes) that set the entry's level — what the student has to fix.

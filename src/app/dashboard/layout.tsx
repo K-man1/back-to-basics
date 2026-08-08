@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth, signIn } from "@/auth";
+import DashboardNav from "@/components/DashboardNav";
 import { getOrCreateStudent } from "@/lib/students";
 import { getReviewerForStudent } from "@/lib/reviewers";
 import { approvedCoinsForStudent } from "@/lib/balance";
@@ -55,34 +55,7 @@ export default async function DashboardLayout({
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col px-6 py-12">
-      <nav className="flex items-center justify-between border-b border-zinc-200 pb-4">
-        <div className="flex gap-6 text-sm text-zinc-600">
-          <Link href="/dashboard" className="hover:text-zinc-900">
-            My Projects
-          </Link>
-          <Link href="/dashboard/explore" className="hover:text-zinc-900">
-            Explore
-          </Link>
-          {reviewer ? (
-            <Link href="/dashboard/review" className="hover:text-zinc-900">
-              Review
-            </Link>
-          ) : null}
-          <Link href="/dashboard/shop" className="hover:text-zinc-900">
-            Shop
-          </Link>
-          <Link href="/dashboard/settings" className="hover:text-zinc-900">
-            Settings
-          </Link>
-        </div>
-        <Link
-          href="/dashboard/settings"
-          className="text-sm text-zinc-900 hover:text-zinc-600"
-          title="Coins earned so far"
-        >
-          {coins} coins
-        </Link>
-      </nav>
+      <DashboardNav showReview={!!reviewer} coins={coins} />
       <div className="flex-1 py-10">{children}</div>
     </div>
   );

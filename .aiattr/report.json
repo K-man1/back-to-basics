@@ -1,0 +1,1377 @@
+{
+  "coverage": {
+    "files_counted": 75,
+    "files_drifted": 2,
+    "files_never_observed": 0,
+    "files_skipped": 9
+  },
+  "files": [
+    {
+      "lines": 657,
+      "path": "src/lib/attribution.ts",
+      "tags": {
+        "ai": {
+          "raw": 0,
+          "sig": 0
+        },
+        "human": {
+          "raw": 0,
+          "sig": 0
+        },
+        "unobserved": {
+          "raw": 657,
+          "sig": 491
+        }
+      }
+    },
+    {
+      "lines": 447,
+      "path": "src/app/dashboard/review/[id]/page.tsx",
+      "tags": {
+        "ai": {
+          "raw": 31,
+          "sig": 31
+        },
+        "human": {
+          "raw": 0,
+          "sig": 0
+        },
+        "unobserved": {
+          "raw": 416,
+          "sig": 381
+        }
+      }
+    },
+    {
+      "lines": 350,
+      "path": "src/app/dashboard/projects/[id]/page.tsx",
+      "tags": {
+        "ai": {
+          "raw": 93,
+          "sig": 89
+        },
+        "human": {
+          "raw": 1,
+          "sig": 1
+        },
+        "unobserved": {
+          "raw": 256,
+          "sig": 224
+        }
+      }
+    },
+    {
+      "lines": 247,
+      "path": "supabase/schema.sql",
+      "tags": {
+        "ai": {
+          "raw": 0,
+          "sig": 0
+        },
+        "human": {
+          "raw": 0,
+          "sig": 0
+        },
+        "unobserved": {
+          "raw": 247,
+          "sig": 140
+        }
+      }
+    },
+    {
+      "lines": 213,
+      "path": "src/lib/rubric.ts",
+      "tags": {
+        "ai": {
+          "raw": 9,
+          "sig": 5
+        },
+        "human": {
+          "raw": 1,
+          "sig": 1
+        },
+        "unobserved": {
+          "raw": 203,
+          "sig": 180
+        }
+      }
+    },
+    {
+      "lines": 199,
+      "path": "src/components/JournalEntryForm.tsx",
+      "tags": {
+        "ai": {
+          "raw": 0,
+          "sig": 0
+        },
+        "human": {
+          "raw": 4,
+          "sig": 4
+        },
+        "unobserved": {
+          "raw": 195,
+          "sig": 174
+        }
+      }
+    },
+    {
+      "lines": 195,
+      "path": "src/lib/journal.ts",
+      "tags": {
+        "ai": {
+          "raw": 0,
+          "sig": 0
+        },
+        "human": {
+          "raw": 0,
+          "sig": 0
+        },
+        "unobserved": {
+          "raw": 195,
+          "sig": 144
+        }
+      }
+    },
+    {
+      "lines": 180,
+      "path": "src/components/AttributionSummary.tsx",
+      "tags": {
+        "ai": {
+          "raw": 0,
+          "sig": 0
+        },
+        "human": {
+          "raw": 0,
+          "sig": 0
+        },
+        "unobserved": {
+          "raw": 180,
+          "sig": 153
+        }
+      }
+    },
+    {
+      "lines": 176,
+      "path": "src/app/globals.css",
+      "tags": {
+        "ai": {
+          "raw": 111,
+          "sig": 97
+        },
+        "human": {
+          "raw": 0,
+          "sig": 0
+        },
+        "unobserved": {
+          "raw": 65,
+          "sig": 61
+        }
+      }
+    },
+    {
+      "lines": 168,
+      "path": "src/app/page.tsx",
+      "tags": {
+        "ai": {
+          "raw": 5,
+          "sig": 5
+        },
+        "human": {
+          "raw": 0,
+          "sig": 0
+        },
+        "unobserved": {
+          "raw": 163,
+          "sig": 151
+        }
+      }
+    },
+    {
+      "lines": 162,
+      "path": "src/app/dashboard/actions.ts",
+      "tags": {
+        "ai": {
+          "raw": 10,
+          "sig": 5
+        },
+        "human": {
+          "raw": 0,
+          "sig": 0
+        },
+        "unobserved": {
+          "raw": 152,
+          "sig": 121
+        }
+      }
+    },
+    {
+      "lines": 155,
+      "path": "src/lib/projects.ts",
+      "tags": {
+        "ai": {
+          "raw": 13,
+          "sig": 7
+        },
+        "human": {
+          "raw": 0,
+          "sig": 0
+        },
+        "unobserved": {
+          "raw": 142,
+          "sig": 116
+        }
+      }
+    },
+    {
+      "lines": 148,
+      "path": "src/components/ProjectEditor.tsx",
+      "tags": {
+        "ai": {
+          "raw": 21,
+          "sig": 21
+        },
+        "human": {
+          "raw": 0,
+          "sig": 0
+        },
+        "unobserved": {
+          "raw": 127,
+          "sig": 118
+        }
+      }
+    },
+    {
+      "lines": 140,
+      "path": "AGENTS.md",
+      "tags": {
+        "ai": {
+          "raw": 32,
+          "sig": 32
+        },
+        "human": {
+          "raw": 0,
+          "sig": 0
+        },
+        "unobserved": {
+          "raw": 108,
+          "sig": 103
+        }
+      }
+    },
+    {
+      "lines": 138,
+      "path": "src/app/onboarding/page.tsx",
+      "tags": {
+        "ai": {
+          "raw": 0,
+          "sig": 0
+        },
+        "human": {
+          "raw": 0,
+          "sig": 0
+        },
+        "unobserved": {
+          "raw": 138,
+          "sig": 128
+        }
+      }
+    },
+    {
+      "lines": 130,
+      "path": "src/components/CoinCalculator.tsx",
+      "tags": {
+        "ai": {
+          "raw": 0,
+          "sig": 0
+        },
+        "human": {
+          "raw": 0,
+          "sig": 0
+        },
+        "unobserved": {
+          "raw": 130,
+          "sig": 116
+        }
+      }
+    },
+    {
+      "lines": 129,
+      "path": "src/components/AttributionInstall.tsx",
+      "tags": {
+        "ai": {
+          "raw": 0,
+          "sig": 0
+        },
+        "human": {
+          "raw": 0,
+          "sig": 0
+        },
+        "unobserved": {
+          "raw": 129,
+          "sig": 110
+        }
+      }
+    },
+    {
+      "lines": 127,
+      "path": "src/components/JournalEntryCard.tsx",
+      "tags": {
+        "ai": {
+          "raw": 30,
+          "sig": 27
+        },
+        "human": {
+          "raw": 0,
+          "sig": 0
+        },
+        "unobserved": {
+          "raw": 97,
+          "sig": 87
+        }
+      }
+    },
+    {
+      "lines": 110,
+      "path": "src/components/AttributionRepoPicker.tsx",
+      "tags": {
+        "ai": {
+          "raw": 0,
+          "sig": 0
+        },
+        "human": {
+          "raw": 0,
+          "sig": 0
+        },
+        "unobserved": {
+          "raw": 110,
+          "sig": 98
+        }
+      }
+    },
+    {
+      "lines": 104,
+      "path": "src/components/GridBackground.tsx",
+      "tags": {
+        "ai": {
+          "raw": 1,
+          "sig": 1
+        },
+        "human": {
+          "raw": 0,
+          "sig": 0
+        },
+        "unobserved": {
+          "raw": 103,
+          "sig": 90
+        }
+      }
+    },
+    {
+      "lines": 101,
+      "path": "src/lib/hackatime.ts",
+      "tags": {
+        "ai": {
+          "raw": 19,
+          "sig": 12
+        },
+        "human": {
+          "raw": 0,
+          "sig": 0
+        },
+        "unobserved": {
+          "raw": 82,
+          "sig": 56
+        }
+      }
+    },
+    {
+      "lines": 96,
+      "path": "src/app/dashboard/settings/page.tsx",
+      "tags": {
+        "ai": {
+          "raw": 6,
+          "sig": 5
+        },
+        "human": {
+          "raw": 0,
+          "sig": 0
+        },
+        "unobserved": {
+          "raw": 90,
+          "sig": 82
+        }
+      }
+    },
+    {
+      "lines": 94,
+      "path": "src/components/Modal.tsx",
+      "tags": {
+        "ai": {
+          "raw": 94,
+          "sig": 75
+        },
+        "human": {
+          "raw": 0,
+          "sig": 0
+        },
+        "unobserved": {
+          "raw": 0,
+          "sig": 0
+        }
+      }
+    },
+    {
+      "lines": 93,
+      "path": "src/app/dashboard/review/actions.ts",
+      "tags": {
+        "ai": {
+          "raw": 0,
+          "sig": 0
+        },
+        "human": {
+          "raw": 0,
+          "sig": 0
+        },
+        "unobserved": {
+          "raw": 93,
+          "sig": 66
+        }
+      }
+    },
+    {
+      "lines": 91,
+      "path": "src/app/dashboard/page.tsx",
+      "tags": {
+        "ai": {
+          "raw": 0,
+          "sig": 0
+        },
+        "human": {
+          "raw": 0,
+          "sig": 0
+        },
+        "unobserved": {
+          "raw": 91,
+          "sig": 82
+        }
+      }
+    },
+    {
+      "lines": 89,
+      "path": "src/lib/reviews.ts",
+      "tags": {
+        "ai": {
+          "raw": 0,
+          "sig": 0
+        },
+        "human": {
+          "raw": 0,
+          "sig": 0
+        },
+        "unobserved": {
+          "raw": 89,
+          "sig": 71
+        }
+      }
+    },
+    {
+      "lines": 88,
+      "path": "src/components/ProjectFormFields.tsx",
+      "tags": {
+        "ai": {
+          "raw": 0,
+          "sig": 0
+        },
+        "human": {
+          "raw": 0,
+          "sig": 0
+        },
+        "unobserved": {
+          "raw": 88,
+          "sig": 85
+        }
+      }
+    },
+    {
+      "lines": 87,
+      "path": "src/components/HackatimeProjectPicker.tsx",
+      "tags": {
+        "ai": {
+          "raw": 0,
+          "sig": 0
+        },
+        "human": {
+          "raw": 0,
+          "sig": 0
+        },
+        "unobserved": {
+          "raw": 87,
+          "sig": 80
+        }
+      }
+    },
+    {
+      "lines": 85,
+      "path": "src/lib/currency.ts",
+      "tags": {
+        "ai": {
+          "raw": 0,
+          "sig": 0
+        },
+        "human": {
+          "raw": 0,
+          "sig": 0
+        },
+        "unobserved": {
+          "raw": 85,
+          "sig": 47
+        }
+      }
+    },
+    {
+      "lines": 83,
+      "path": "src/app/api/attribution/records/route.ts",
+      "tags": {
+        "ai": {
+          "raw": 0,
+          "sig": 0
+        },
+        "human": {
+          "raw": 0,
+          "sig": 0
+        },
+        "unobserved": {
+          "raw": 83,
+          "sig": 52
+        }
+      }
+    },
+    {
+      "lines": 82,
+      "path": "src/app/dashboard/review/page.tsx",
+      "tags": {
+        "ai": {
+          "raw": 0,
+          "sig": 0
+        },
+        "human": {
+          "raw": 0,
+          "sig": 0
+        },
+        "unobserved": {
+          "raw": 82,
+          "sig": 70
+        }
+      }
+    },
+    {
+      "lines": 81,
+      "path": "src/lib/students.ts",
+      "tags": {
+        "ai": {
+          "raw": 0,
+          "sig": 0
+        },
+        "human": {
+          "raw": 0,
+          "sig": 0
+        },
+        "unobserved": {
+          "raw": 81,
+          "sig": 71
+        }
+      }
+    },
+    {
+      "lines": 80,
+      "path": "src/components/SubmitProjectButton.tsx",
+      "tags": {
+        "ai": {
+          "raw": 80,
+          "sig": 71
+        },
+        "human": {
+          "raw": 0,
+          "sig": 0
+        },
+        "unobserved": {
+          "raw": 0,
+          "sig": 0
+        }
+      }
+    },
+    {
+      "lines": 78,
+      "path": "src/lib/github.ts",
+      "tags": {
+        "ai": {
+          "raw": 0,
+          "sig": 0
+        },
+        "human": {
+          "raw": 0,
+          "sig": 0
+        },
+        "unobserved": {
+          "raw": 78,
+          "sig": 56
+        }
+      }
+    },
+    {
+      "lines": 74,
+      "path": "src/components/ScrambleText.tsx",
+      "tags": {
+        "ai": {
+          "raw": 0,
+          "sig": 0
+        },
+        "human": {
+          "raw": 0,
+          "sig": 0
+        },
+        "unobserved": {
+          "raw": 74,
+          "sig": 59
+        }
+      }
+    },
+    {
+      "lines": 68,
+      "path": "src/components/ConfirmButton.tsx",
+      "tags": {
+        "ai": {
+          "raw": 68,
+          "sig": 63
+        },
+        "human": {
+          "raw": 0,
+          "sig": 0
+        },
+        "unobserved": {
+          "raw": 0,
+          "sig": 0
+        }
+      }
+    },
+    {
+      "lines": 67,
+      "path": "src/app/api/hackatime/callback/route.ts",
+      "tags": {
+        "ai": {
+          "raw": 0,
+          "sig": 0
+        },
+        "human": {
+          "raw": 7,
+          "sig": 7
+        },
+        "unobserved": {
+          "raw": 60,
+          "sig": 48
+        }
+      }
+    },
+    {
+      "lines": 65,
+      "path": "src/app/dashboard/explore/page.tsx",
+      "tags": {
+        "ai": {
+          "raw": 0,
+          "sig": 0
+        },
+        "human": {
+          "raw": 0,
+          "sig": 0
+        },
+        "unobserved": {
+          "raw": 65,
+          "sig": 61
+        }
+      }
+    },
+    {
+      "lines": 64,
+      "path": "src/lib/balance.ts",
+      "tags": {
+        "ai": {
+          "raw": 0,
+          "sig": 0
+        },
+        "human": {
+          "raw": 0,
+          "sig": 0
+        },
+        "unobserved": {
+          "raw": 64,
+          "sig": 53
+        }
+      }
+    },
+    {
+      "lines": 62,
+      "path": "src/app/dashboard/layout.tsx",
+      "tags": {
+        "ai": {
+          "raw": 2,
+          "sig": 2
+        },
+        "human": {
+          "raw": 0,
+          "sig": 0
+        },
+        "unobserved": {
+          "raw": 60,
+          "sig": 51
+        }
+      }
+    },
+    {
+      "lines": 60,
+      "path": "src/components/DashboardNav.tsx",
+      "tags": {
+        "ai": {
+          "raw": 60,
+          "sig": 50
+        },
+        "human": {
+          "raw": 0,
+          "sig": 0
+        },
+        "unobserved": {
+          "raw": 0,
+          "sig": 0
+        }
+      }
+    },
+    {
+      "lines": 59,
+      "path": "src/app/api/attribution/sync/route.ts",
+      "tags": {
+        "ai": {
+          "raw": 0,
+          "sig": 0
+        },
+        "human": {
+          "raw": 0,
+          "sig": 0
+        },
+        "unobserved": {
+          "raw": 59,
+          "sig": 35
+        }
+      }
+    },
+    {
+      "lines": 59,
+      "path": "src/components/ThemeToggle.tsx",
+      "tags": {
+        "ai": {
+          "raw": 59,
+          "sig": 41
+        },
+        "human": {
+          "raw": 0,
+          "sig": 0
+        },
+        "unobserved": {
+          "raw": 0,
+          "sig": 0
+        }
+      }
+    },
+    {
+      "lines": 56,
+      "path": "src/app/api/journal/upload/route.ts",
+      "tags": {
+        "ai": {
+          "raw": 0,
+          "sig": 0
+        },
+        "human": {
+          "raw": 0,
+          "sig": 0
+        },
+        "unobserved": {
+          "raw": 56,
+          "sig": 45
+        }
+      }
+    },
+    {
+      "lines": 53,
+      "path": "src/app/rubric/page.tsx",
+      "tags": {
+        "ai": {
+          "raw": 0,
+          "sig": 0
+        },
+        "human": {
+          "raw": 33,
+          "sig": 28
+        },
+        "unobserved": {
+          "raw": 20,
+          "sig": 17
+        }
+      }
+    },
+    {
+      "lines": 50,
+      "path": "src/app/dashboard/projects/new/page.tsx",
+      "tags": {
+        "ai": {
+          "raw": 0,
+          "sig": 0
+        },
+        "human": {
+          "raw": 0,
+          "sig": 0
+        },
+        "unobserved": {
+          "raw": 50,
+          "sig": 46
+        }
+      }
+    },
+    {
+      "lines": 44,
+      "path": "src/components/RubricTable.tsx",
+      "tags": {
+        "ai": {
+          "raw": 33,
+          "sig": 30
+        },
+        "human": {
+          "raw": 1,
+          "sig": 0
+        },
+        "unobserved": {
+          "raw": 10,
+          "sig": 8
+        }
+      }
+    },
+    {
+      "lines": 43,
+      "path": "src/lib/hackclub-provider.ts",
+      "tags": {
+        "ai": {
+          "raw": 0,
+          "sig": 0
+        },
+        "human": {
+          "raw": 0,
+          "sig": 0
+        },
+        "unobserved": {
+          "raw": 43,
+          "sig": 35
+        }
+      }
+    },
+    {
+      "lines": 42,
+      "path": ".gitignore",
+      "tags": {
+        "ai": {
+          "raw": 0,
+          "sig": 0
+        },
+        "human": {
+          "raw": 0,
+          "sig": 0
+        },
+        "unobserved": {
+          "raw": 42,
+          "sig": 33
+        }
+      }
+    },
+    {
+      "lines": 42,
+      "path": "src/app/layout.tsx",
+      "tags": {
+        "ai": {
+          "raw": 10,
+          "sig": 10
+        },
+        "human": {
+          "raw": 0,
+          "sig": 0
+        },
+        "unobserved": {
+          "raw": 32,
+          "sig": 28
+        }
+      }
+    },
+    {
+      "lines": 41,
+      "path": "src/components/HowItWorks.tsx",
+      "tags": {
+        "ai": {
+          "raw": 18,
+          "sig": 15
+        },
+        "human": {
+          "raw": 0,
+          "sig": 0
+        },
+        "unobserved": {
+          "raw": 23,
+          "sig": 22
+        }
+      }
+    },
+    {
+      "lines": 40,
+      "path": "src/app/api/hackatime/connect/route.ts",
+      "tags": {
+        "ai": {
+          "raw": 0,
+          "sig": 0
+        },
+        "human": {
+          "raw": 3,
+          "sig": 3
+        },
+        "unobserved": {
+          "raw": 37,
+          "sig": 30
+        }
+      }
+    },
+    {
+      "lines": 38,
+      "path": "src/app/api/attribution/verify/route.ts",
+      "tags": {
+        "ai": {
+          "raw": 0,
+          "sig": 0
+        },
+        "human": {
+          "raw": 0,
+          "sig": 0
+        },
+        "unobserved": {
+          "raw": 38,
+          "sig": 25
+        }
+      }
+    },
+    {
+      "lines": 37,
+      "path": "src/components/AddJournalEntry.tsx",
+      "tags": {
+        "ai": {
+          "raw": 0,
+          "sig": 0
+        },
+        "human": {
+          "raw": 0,
+          "sig": 0
+        },
+        "unobserved": {
+          "raw": 37,
+          "sig": 31
+        }
+      }
+    },
+    {
+      "lines": 36,
+      "path": "README.md",
+      "tags": {
+        "ai": {
+          "raw": 0,
+          "sig": 0
+        },
+        "human": {
+          "raw": 0,
+          "sig": 0
+        },
+        "unobserved": {
+          "raw": 36,
+          "sig": 23
+        }
+      }
+    },
+    {
+      "lines": 34,
+      "path": "tsconfig.json",
+      "tags": {
+        "ai": {
+          "raw": 0,
+          "sig": 0
+        },
+        "human": {
+          "raw": 0,
+          "sig": 0
+        },
+        "unobserved": {
+          "raw": 34,
+          "sig": 34
+        }
+      }
+    },
+    {
+      "lines": 30,
+      "path": "package.json",
+      "tags": {
+        "ai": {
+          "raw": 0,
+          "sig": 0
+        },
+        "human": {
+          "raw": 0,
+          "sig": 0
+        },
+        "unobserved": {
+          "raw": 30,
+          "sig": 30
+        }
+      }
+    },
+    {
+      "lines": 30,
+      "path": "src/app/api/attribution/key/route.ts",
+      "tags": {
+        "ai": {
+          "raw": 0,
+          "sig": 0
+        },
+        "human": {
+          "raw": 0,
+          "sig": 0
+        },
+        "unobserved": {
+          "raw": 30,
+          "sig": 19
+        }
+      }
+    },
+    {
+      "lines": 27,
+      "path": "src/auth.ts",
+      "tags": {
+        "ai": {
+          "raw": 0,
+          "sig": 0
+        },
+        "human": {
+          "raw": 0,
+          "sig": 0
+        },
+        "unobserved": {
+          "raw": 27,
+          "sig": 26
+        }
+      }
+    },
+    {
+      "lines": 27,
+      "path": "src/components/StatusBadge.tsx",
+      "tags": {
+        "ai": {
+          "raw": 0,
+          "sig": 0
+        },
+        "human": {
+          "raw": 0,
+          "sig": 0
+        },
+        "unobserved": {
+          "raw": 27,
+          "sig": 24
+        }
+      }
+    },
+    {
+      "lines": 26,
+      "path": "src/lib/reviewers.ts",
+      "tags": {
+        "ai": {
+          "raw": 0,
+          "sig": 0
+        },
+        "human": {
+          "raw": 0,
+          "sig": 0
+        },
+        "unobserved": {
+          "raw": 26,
+          "sig": 18
+        }
+      }
+    },
+    {
+      "lines": 25,
+      "path": "templates/AGENTS.md",
+      "tags": {
+        "ai": {
+          "raw": 0,
+          "sig": 0
+        },
+        "human": {
+          "raw": 0,
+          "sig": 0
+        },
+        "unobserved": {
+          "raw": 25,
+          "sig": 20
+        }
+      }
+    },
+    {
+      "lines": 22,
+      "path": "src/lib/url.ts",
+      "tags": {
+        "ai": {
+          "raw": 0,
+          "sig": 0
+        },
+        "human": {
+          "raw": 0,
+          "sig": 0
+        },
+        "unobserved": {
+          "raw": 22,
+          "sig": 12
+        }
+      }
+    },
+    {
+      "lines": 21,
+      "path": "next.config.ts",
+      "tags": {
+        "ai": {
+          "raw": 15,
+          "sig": 10
+        },
+        "human": {
+          "raw": 0,
+          "sig": 0
+        },
+        "unobserved": {
+          "raw": 6,
+          "sig": 4
+        }
+      }
+    },
+    {
+      "lines": 21,
+      "path": "src/lib/admin-auth.ts",
+      "tags": {
+        "ai": {
+          "raw": 0,
+          "sig": 0
+        },
+        "human": {
+          "raw": 0,
+          "sig": 0
+        },
+        "unobserved": {
+          "raw": 21,
+          "sig": 9
+        }
+      }
+    },
+    {
+      "lines": 20,
+      "path": "src/app/api/attribution/pending/route.ts",
+      "tags": {
+        "ai": {
+          "raw": 0,
+          "sig": 0
+        },
+        "human": {
+          "raw": 0,
+          "sig": 0
+        },
+        "unobserved": {
+          "raw": 20,
+          "sig": 11
+        }
+      }
+    },
+    {
+      "lines": 19,
+      "path": "src/app/dashboard/shop/page.tsx",
+      "tags": {
+        "ai": {
+          "raw": 11,
+          "sig": 11
+        },
+        "human": {
+          "raw": 1,
+          "sig": 1
+        },
+        "unobserved": {
+          "raw": 7,
+          "sig": 6
+        }
+      }
+    },
+    {
+      "lines": 18,
+      "path": "eslint.config.mjs",
+      "tags": {
+        "ai": {
+          "raw": 0,
+          "sig": 0
+        },
+        "human": {
+          "raw": 0,
+          "sig": 0
+        },
+        "unobserved": {
+          "raw": 18,
+          "sig": 14
+        }
+      }
+    },
+    {
+      "lines": 11,
+      "path": "src/lib/supabase.ts",
+      "tags": {
+        "ai": {
+          "raw": 0,
+          "sig": 0
+        },
+        "human": {
+          "raw": 0,
+          "sig": 0
+        },
+        "unobserved": {
+          "raw": 11,
+          "sig": 8
+        }
+      }
+    },
+    {
+      "lines": 10,
+      "path": "src/types/next-auth.d.ts",
+      "tags": {
+        "ai": {
+          "raw": 0,
+          "sig": 0
+        },
+        "human": {
+          "raw": 0,
+          "sig": 0
+        },
+        "unobserved": {
+          "raw": 10,
+          "sig": 9
+        }
+      }
+    },
+    {
+      "lines": 9,
+      "path": "src/lib/theme.ts",
+      "tags": {
+        "ai": {
+          "raw": 9,
+          "sig": 2
+        },
+        "human": {
+          "raw": 0,
+          "sig": 0
+        },
+        "unobserved": {
+          "raw": 0,
+          "sig": 0
+        }
+      }
+    },
+    {
+      "lines": 7,
+      "path": "postcss.config.mjs",
+      "tags": {
+        "ai": {
+          "raw": 0,
+          "sig": 0
+        },
+        "human": {
+          "raw": 0,
+          "sig": 0
+        },
+        "unobserved": {
+          "raw": 7,
+          "sig": 6
+        }
+      }
+    },
+    {
+      "lines": 5,
+      "path": "src/app/coins/page.tsx",
+      "tags": {
+        "ai": {
+          "raw": 0,
+          "sig": 0
+        },
+        "human": {
+          "raw": 2,
+          "sig": 2
+        },
+        "unobserved": {
+          "raw": 3,
+          "sig": 2
+        }
+      }
+    },
+    {
+      "lines": 3,
+      "path": "src/app/api/auth/[...nextauth]/route.ts",
+      "tags": {
+        "ai": {
+          "raw": 0,
+          "sig": 0
+        },
+        "human": {
+          "raw": 0,
+          "sig": 0
+        },
+        "unobserved": {
+          "raw": 3,
+          "sig": 2
+        }
+      }
+    },
+    {
+      "lines": 1,
+      "path": "CLAUDE.md",
+      "tags": {
+        "ai": {
+          "raw": 0,
+          "sig": 0
+        },
+        "human": {
+          "raw": 0,
+          "sig": 0
+        },
+        "unobserved": {
+          "raw": 1,
+          "sig": 1
+        }
+      }
+    }
+  ],
+  "generated": "2026-08-08T01:40:58Z",
+  "head": "950144586bf3685734ad993e66f2399258af6799",
+  "plugin_version": "0.5.1",
+  "totals": {
+    "ai": {
+      "raw": 840,
+      "sig": 717
+    },
+    "human": {
+      "raw": 53,
+      "sig": 47
+    },
+    "unobserved": {
+      "raw": 5976,
+      "sig": 4909
+    }
+  }
+}

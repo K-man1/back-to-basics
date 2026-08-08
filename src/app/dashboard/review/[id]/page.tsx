@@ -12,7 +12,7 @@ import { getHackatimeStatsForStudent } from "@/lib/hackatime";
 import { latestVerifications, listReposByKeys } from "@/lib/attribution";
 import AttributionSummary from "@/components/AttributionSummary";
 import { getEntriesForProject, gradedLevels, axisScores } from "@/lib/journal";
-import { AXES, LEVEL_MAX, scoreBreakdown, limitingAxes } from "@/lib/rubric";
+import { AXES, LEVEL_MAX, levelLabel } from "@/lib/rubric";
 import RubricTable from "@/components/RubricTable";
 import {
   parseGithubBlobLink,
@@ -90,7 +90,6 @@ export default async function ReviewDetailPage({
 
   const graded = gradedLevels(journalEntries);
   const gradedCount = graded.length;
-  const ungradedCount = journalEntries.length - gradedCount;
 
   // What the current grades are worth for this project, before the reviewer's
   // own coin adjustment (that's a live form input, so it can't fold in here).
@@ -118,7 +117,9 @@ export default async function ReviewDetailPage({
 
       <section className="border border-zinc-200 bg-white p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-sm font-semibold text-zinc-900">Project</h2>
+          <h2 className="text-sm font-semibold text-zinc-900">
+            <span className="text-zinc-400">1. </span>The project
+          </h2>
           <div className="flex gap-2 text-xs">
             {normalizeExternalUrl(project.github_url) ? (
               <a
@@ -189,7 +190,7 @@ export default async function ReviewDetailPage({
       <section className="flex flex-col gap-4">
         <div className="flex flex-wrap items-baseline justify-between gap-3">
           <h2 className="text-sm font-semibold text-zinc-900">
-            Learning journal
+            <span className="text-zinc-400">2. </span>Grade the journal
           </h2>
           <a
             href="/rubric"
@@ -205,8 +206,7 @@ export default async function ReviewDetailPage({
             has to leave the page to check a band grades from memory instead. */}
         <details className="border border-zinc-200 bg-white">
           <summary className="cursor-pointer list-none p-4 text-sm text-zinc-900 marker:content-none">
-            <span className="text-zinc-400">▸</span> Rubric — three gate
-            ladders, entry level is the lowest of the three
+            <span className="text-zinc-400">▸</span> Rubric
           </summary>
           <div className="border-t border-zinc-200 p-4">
             <RubricTable />
@@ -236,9 +236,9 @@ export default async function ReviewDetailPage({
                     }`}
                   >
                     {scores
-                      ? scoreBreakdown(scores)
+                      ? levelLabel(scores)
                       : entry.level != null
-                        ? `${entry.level}/${LEVEL_MAX}`
+                        ? `Level ${entry.level} of ${LEVEL_MAX}`
                         : "ungraded"}
                   </span>
                 </div>
@@ -301,51 +301,43 @@ export default async function ReviewDetailPage({
                   action={gradeEntryAction.bind(null, project.id, entry.id)}
                   className="border-t border-zinc-200 bg-zinc-50 px-4 py-3"
                 >
-                  {/* One select per axis, each option being that axis's own
-                      level wording — the reviewer is picking off the rubric,
-                      not typing a number they'd have to justify later. */}
+                  {/* One row of numbers per axis. The level wording lives in
+                      the rubric above; repeating it on every option turned
+                      three picks into a wall of text. */}
                   <div className="flex flex-col gap-2">
                     {AXES.map((axis) => (
-                      <label
+                      <div
                         key={axis.key}
                         className="flex flex-wrap items-center gap-2 text-xs text-zinc-600"
                       >
                         <span className="w-28 shrink-0">{axis.name}</span>
-                        <select
-                          name={axis.key}
-                          required
-                          defaultValue={scores?.[axis.key] ?? ""}
-                          className="min-w-0 flex-1 rounded border border-zinc-300 bg-white p-1.5 text-sm"
-                        >
-                          <option value="" disabled>
-                            —
-                          </option>
+                        <div className="flex gap-1">
                           {axis.levels.map((summary, level) => (
-                            <option key={level} value={level}>
-                              {level} — {summary}
-                            </option>
+                            <label key={level} title={summary}>
+                              <input
+                                type="radio"
+                                name={axis.key}
+                                value={level}
+                                required
+                                defaultChecked={scores?.[axis.key] === level}
+                                className="peer sr-only"
+                              />
+                              <span className="block w-8 cursor-pointer rounded border border-zinc-300 bg-white py-1 text-center text-sm text-zinc-600 transition-colors hover:border-zinc-900 peer-checked:border-zinc-900 peer-checked:bg-zinc-900 peer-checked:text-white peer-focus-visible:ring-2 peer-focus-visible:ring-zinc-400">
+                                {level}
+                              </span>
+                            </label>
                           ))}
-                        </select>
-                      </label>
+                        </div>
+                      </div>
                     ))}
                   </div>
-                  <div className="mt-3 flex flex-wrap items-center gap-3">
+                  <div className="mt-3">
                     <button
                       type="submit"
                       className="rounded border border-zinc-900 px-3 py-1.5 text-xs text-zinc-900 transition-colors hover:bg-zinc-900 hover:text-white"
                     >
                       {entry.level != null ? "Regrade" : "Grade"}
                     </button>
-                    <span className="text-xs text-zinc-400">
-                      entry level = the lowest of the three
-                      {scores
-                        ? ` · now ${scoreBreakdown(scores)}, capped by ${limitingAxes(
-                            scores,
-                          )
-                            .map((a) => a.name)
-                            .join(" and ")}`
-                        : ""}
-                    </span>
                   </div>
                 </form>
               ) : null}
@@ -366,21 +358,13 @@ export default async function ReviewDetailPage({
         >
           <div>
             <h2 className="text-sm font-semibold text-zinc-900">
-              Record a decision
+              <span className="text-zinc-400">3. </span>Record a decision
             </h2>
             <p className="mt-1 text-xs text-zinc-500">
               These grades award this project{" "}
               <span className="text-zinc-900">{projectCoins}</span> coins
               (before any adjustment below).
             </p>
-            {ungradedCount > 0 ? (
-              <p className="mt-1 text-xs text-amber-600">
-                {ungradedCount} of {journalEntries.length}{" "}
-                {journalEntries.length === 1 ? "entry is" : "entries are"} still
-                ungraded — entry levels set the whole payout, so grade
-                everything above first.
-              </p>
-            ) : null}
           </div>
 
           <fieldset className="flex flex-col gap-2 text-sm">
@@ -409,9 +393,7 @@ export default async function ReviewDetailPage({
           </label>
 
           <label className="flex flex-col gap-1 text-sm">
-            <span className="text-zinc-600">
-              Coin adjustment (negative to deflate, blank for none)
-            </span>
+            <span className="text-zinc-600">Coin adjustment</span>
             <input
               type="number"
               name="points_delta"

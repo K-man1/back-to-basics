@@ -82,36 +82,24 @@ export default async function Home() {
     <div className="flex flex-1 flex-col">
       <GridBackground />
 
-      
-
       <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col px-6">
         {/* Hero */}
         <section className="max-w-2xl py-28 sm:py-36">
           <h1 className="mt-5 text-5xl leading-none tracking-tight text-zinc-900 sm:text-6xl">
             <ScrambleText text="Back to Basics" />
           </h1>
-          <p className="mt-6 max-w-md text-base leading-7 text-zinc-700">
-            Shipping projects is pretty easy, but learning what you are doing is just as important.
+          <p className="mt-6 max-w-lg text-lg leading-8 text-zinc-700">
+            Build real projects, journal what you learn, and get rewarded for
+            understanding your code — not just shipping it.
           </p>
-          <p className="mt-3 max-w-md text-sm leading-6 text-zinc-500">
-            Build real projects, journal what you learn, and prizes for learning, not just shipping.
-            
-          </p>
-          <div className="mt-8 flex items-center gap-4">
+          <div className="mt-8">
             <SignInButton label="Sign in with Hack Club →" />
-            <a
-              href="#how"
-              className="text-sm text-zinc-500 underline-offset-4 hover:text-zinc-900 hover:underline"
-            >
-              How it works
-            </a>
           </div>
         </section>
 
         {/* How it works */}
         <section id="how" className="scroll-mt-20 border-t border-zinc-200 py-20">
-          
-          <h2 className="mt-4 text-2xl tracking-tight text-zinc-900 sm:text-3xl">
+          <h2 className="text-2xl tracking-tight text-zinc-900 sm:text-3xl">
             How It Works
           </h2>
           <HowItWorks />

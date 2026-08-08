@@ -22,6 +22,23 @@ export interface HackatimeStats {
   projects: HackatimeProjectStat[];
 }
 
+// Hackatime can return the same project name more than once in a stats window
+// (the catch-all `Other` bucket especially). Names are the identity we key the
+// picker and `projects.hackatime_project_names` on, so collapse them here and
+// sum the seconds rather than letting duplicates reach the UI.
+function parseProjects(raw: unknown): HackatimeProjectStat[] {
+  if (!Array.isArray(raw)) return [];
+
+  const byName = new Map<string, number>();
+  for (const entry of raw) {
+    const p = entry as { name?: unknown; total_seconds?: unknown };
+    if (typeof p?.name !== "string" || typeof p?.total_seconds !== "number") continue;
+    byName.set(p.name, (byName.get(p.name) ?? 0) + p.total_seconds);
+  }
+
+  return [...byName].map(([name, total_seconds]) => ({ name, total_seconds }));
+}
+
 export async function getAuthenticatedHackatimeStats(
   accessToken: string,
 ): Promise<HackatimeStats | null> {
@@ -47,17 +64,7 @@ export async function getAuthenticatedHackatimeStats(
   let projects: HackatimeProjectStat[] = [];
   if (projectsRes.ok) {
     const body = await projectsRes.json().catch(() => null);
-    if (Array.isArray(body?.projects)) {
-      projects = body.projects
-        .filter((p: unknown): p is { name: string; total_seconds: number } =>
-          typeof (p as { name?: unknown })?.name === "string" &&
-          typeof (p as { total_seconds?: unknown })?.total_seconds === "number",
-        )
-        .map((p: { name: string; total_seconds: number }) => ({
-          name: p.name,
-          total_seconds: p.total_seconds,
-        }));
-    }
+    projects = parseProjects(body?.projects);
   }
 
   return { totalSeconds: hours.total_seconds, projects };
@@ -77,19 +84,7 @@ export async function getPublicHackatimeStats(
   const data = body?.data;
   if (typeof data?.total_seconds !== "number") return null;
 
-  const projects: HackatimeProjectStat[] = Array.isArray(data.projects)
-    ? data.projects
-        .filter((p: unknown): p is { name: string; total_seconds: number } =>
-          typeof (p as { name?: unknown })?.name === "string" &&
-          typeof (p as { total_seconds?: unknown })?.total_seconds === "number",
-        )
-        .map((p: { name: string; total_seconds: number }) => ({
-          name: p.name,
-          total_seconds: p.total_seconds,
-        }))
-    : [];
-
-  return { totalSeconds: data.total_seconds, projects };
+  return { totalSeconds: data.total_seconds, projects: parseProjects(data.projects) };
 }
 
 export async function getHackatimeStatsForStudent(student: {

@@ -3,6 +3,14 @@
 :root {
   --background: #fafaf8;
   --foreground: #171717;
+  /* Faint squares in GridBackground, the modal backdrop, and the code block
+     inside rendered journal markdown — the places a colour is set outside
+     Tailwind. */
+  --grid-cell: #000;
+  --scrim: rgb(0 0 0 / 0.5);
+  --code-bg: #18181b;
+  --code-fg: #f4f4f5;
+  color-scheme: light;
 }
 
 @theme inline {
@@ -10,6 +18,107 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-mono);
   --font-mono: var(--font-geist-mono);
+}
+
+/* Dark mode, done in one place: Tailwind v4 compiles every colour utility to
+   var(--color-*), so flipping the palette here flips the whole site without
+   touching a single className. The zinc ramp is mirrored end for end (50↔950,
+   100↔900, … 500 stays put), so "dark text on white" comes out as "light text
+   on near-black" everywhere it appears. The tinted accents are swapped the
+   same way: the shade used for text goes light, the shade used for borders
+   goes dark.
+
+   Keyed off the attribute rather than the media query, because the theme has
+   a manual override (ThemeToggle). The head script in layout.tsx resolves
+   "no saved preference" to the system setting before first paint, so this
+   still follows the OS by default. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --background: #0a0a0c;
+  --foreground: #ededed;
+  --grid-cell: #fff;
+  /* Not mirrored: an inverted code block would be a white slab on a dark
+     page. Kept dark, one step lighter than the card it sits on. */
+  --code-bg: #27272a;
+  --code-fg: #f4f4f5;
+  /* Not mirrored either: `bg-black` flips to white here, and a dialog wants a
+     darker page behind it in both themes, pushed a little further on dark. */
+  --scrim: rgb(0 0 0 / 0.65);
+
+  /* `bg-white` is the card surface, so it lands one step above the page
+     background rather than at pure black. */
+  --color-white: #18181b;
+  --color-black: #fafafa;
+
+  --color-zinc-50: #09090b;
+  --color-zinc-100: #18181b;
+  --color-zinc-200: #27272a;
+  --color-zinc-300: #3f3f46;
+  /* 400 and 500 are the muted-text shades and a straight mirror leaves them
+     almost invisible on a near-black card, so both are lifted a step. */
+  --color-zinc-400: #6f6f78;
+  --color-zinc-500: #8b8b94;
+  --color-zinc-600: #a1a1aa;
+  --color-zinc-700: #d4d4d8;
+  --color-zinc-800: #e4e4e7;
+  --color-zinc-900: #f4f4f5;
+  --color-zinc-950: #fafafa;
+
+  --color-green-300: #166534;
+  --color-green-700: #4ade80;
+
+  --color-amber-50: #292213;
+  --color-amber-300: #92400e;
+  --color-amber-600: #fcd34d;
+  --color-amber-700: #fbbf24;
+  --color-amber-900: #fde68a;
+
+  --color-orange-300: #9a3412;
+  --color-orange-700: #fb923c;
+
+  --color-red-300: #991b1b;
+  --color-red-600: #f87171;
+  --color-red-700: #fca5a5;
+}
+
+/* Modal entrance (src/components/Modal.tsx): the backdrop fades, the panel
+   rises with it. Registered in @theme so the `animate-*` utilities exist
+   without a plugin. */
+@theme {
+  --animate-fade-in: fade-in 120ms ease-out;
+  --animate-panel-in: panel-in 160ms ease-out;
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes panel-in {
+    from {
+      opacity: 0;
+      transform: translateY(0.5rem);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+.modal-scrim {
+  background: var(--scrim);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in,
+  .animate-panel-in {
+    animation: none;
+  }
 }
 
 body {
@@ -51,8 +160,8 @@ body {
 .prose-journal pre {
   overflow-x: auto;
   border-radius: 0.25rem;
-  background: #18181b;
-  color: #f4f4f5;
+  background: var(--code-bg);
+  color: var(--code-fg);
   padding: 0.5rem;
   font-size: 0.75rem;
 }

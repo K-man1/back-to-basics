@@ -159,13 +159,6 @@ export default function AttributionSummary({
         {repos.map((r) => r.name).join(", ")}
       </p>
 
-      {forReviewer && !hasVerified ? (
-        <p className="text-xs text-amber-700">
-          These numbers came from the student&apos;s own machine and have not
-          been verified against their pushed history. Treat them as a claim.
-        </p>
-      ) : null}
-
       {forReviewer && critical.length > 0 ? (
         <ul className="flex flex-col gap-1 text-xs text-amber-700">
           {critical.map((f, i) => (

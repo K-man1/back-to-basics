@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import ProjectFormFields from "@/components/ProjectFormFields";
+import ConfirmButton from "@/components/ConfirmButton";
 import type { Project } from "@/lib/projects";
 import { normalizeExternalUrl } from "@/lib/url";
 import type { HackatimeProjectStat } from "@/lib/hackatime";
@@ -34,24 +35,11 @@ export default function ProjectEditor({
   if (!editing) {
     return (
       <section className="border border-zinc-200 bg-white p-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-zinc-900">Project details</h2>
-          <button
-            type="button"
-            onClick={() => setEditing(true)}
-            className="rounded border border-zinc-300 px-3 py-1 text-xs text-zinc-600 transition-colors hover:border-zinc-900 hover:text-zinc-900"
-          >
-            Edit
-          </button>
-        </div>
+        {/* The description lives under the page title now, so this card is
+            just the links and the Hackatime mapping. */}
+        <h2 className="text-sm font-semibold text-zinc-900">Project details</h2>
 
-        <p className="mt-3 text-sm text-zinc-700">
-          {project.description || (
-            <span className="text-zinc-400">No description yet.</span>
-          )}
-        </p>
-
-        <dl className="mt-4 grid grid-cols-[6.5rem_1fr] gap-y-2 text-sm">
+        <dl className="mt-3 grid grid-cols-[6.5rem_1fr] gap-y-2 text-sm">
           <dt className="text-zinc-500">GitHub</dt>
           <dd className="min-w-0">
             {githubHref ? (
@@ -99,26 +87,25 @@ export default function ProjectEditor({
           </dd>
         </dl>
 
-        <form
-          action={deleteAction}
-          onSubmit={(e) => {
-            if (
-              !confirm(
-                "Delete this project? This also removes its journal entries and can't be undone.",
-              )
-            ) {
-              e.preventDefault();
-            }
-          }}
-          className="mt-4 border-t border-zinc-100 pt-3"
-        >
+        {/* Both controls for this card live together at its foot, so "what can
+            I do with this project" is one place instead of two corners. */}
+        <div className="mt-4 flex items-center justify-between gap-3 border-t border-zinc-100 pt-3">
           <button
-            type="submit"
-            className="text-xs text-zinc-500 underline hover:text-red-600"
+            type="button"
+            onClick={() => setEditing(true)}
+            className="rounded border border-zinc-300 px-3 py-1 text-xs text-zinc-600 transition-colors hover:border-zinc-900 hover:text-zinc-900"
           >
-            Delete project
+            Edit project
           </button>
-        </form>
+          <ConfirmButton
+            label="Delete project"
+            className="text-xs text-zinc-500 underline hover:text-red-600"
+            title="Delete this project?"
+            body="This also removes its journal entries. It can't be undone."
+            confirmLabel="Delete project"
+            action={deleteAction}
+          />
+        </div>
       </section>
     );
   }

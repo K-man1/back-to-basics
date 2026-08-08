@@ -94,7 +94,7 @@ export default function GridBackground() {
               height: CELL_SIZE,
               transitionDuration: `${FADE_MS}ms`,
               opacity: active.has(i) ? 0.06 : 0,
-              backgroundColor: "#000",
+              backgroundColor: "var(--grid-cell)",
             }}
           />
         ))}

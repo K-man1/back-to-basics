@@ -107,7 +107,7 @@ export default function JournalEntryForm({
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         required
-        placeholder="What did you figure out? (e.g. Why BFS finds shortest paths)"
+        placeholder="Title"
         className="rounded border border-zinc-300 p-2 text-sm"
       />
 
@@ -154,7 +154,7 @@ export default function JournalEntryForm({
           required
           rows={8}
           className="rounded border border-zinc-300 p-2 font-mono text-sm"
-          placeholder="Markdown supported. In your own words: what did you learn, how did it click, and what did you build? Paste or upload screenshots to embed them."
+          placeholder="Write your journal entry in markdown..."
         />
       )}
 
@@ -163,7 +163,7 @@ export default function JournalEntryForm({
         name="lapse_url"
         value={lapseUrl}
         onChange={(e) => setLapseUrl(e.target.value)}
-        placeholder="Lapse timelapse of this session (optional) — https://lapse.hackclub.com/…"
+        placeholder="Lapse link (optional)"
         className="rounded border border-zinc-300 p-2 text-sm"
       />
       <textarea
@@ -172,7 +172,7 @@ export default function JournalEntryForm({
         onChange={(e) => setGithubLinks(e.target.value)}
         rows={2}
         placeholder={
-          "GitHub permalinks to the code this is about (optional, one per line).\nTip: press Y on a GitHub file to pin the commit, click a line number to link it."
+          "Citations"
         }
         className="rounded border border-zinc-300 p-2 font-mono text-xs"
       />

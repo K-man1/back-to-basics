@@ -139,9 +139,11 @@ export async function deleteProject(
     .eq("student_id", studentId);
 }
 
-// A student can submit a fresh draft or resubmit one a reviewer bounced back
-// with changes_requested. Approved/rejected are terminal, so the status filter
-// refuses those transitions server-side even if the UI slips.
+// A student can submit a fresh draft, resubmit one a reviewer bounced back
+// with changes_requested, or resubmit an already-approved project (e.g. after
+// adding more journal entries). Sending it back to "submitted" drops it out of
+// the approved-coins total (balance.ts) and off Explore until a reviewer
+// approves it again — rejected is the only terminal status.
 export async function submitProject(projectId: string, studentId: string): Promise<void> {
   const supabase = supabaseAdmin();
   await supabase
@@ -149,5 +151,5 @@ export async function submitProject(projectId: string, studentId: string): Promi
     .update({ status: "submitted" })
     .eq("id", projectId)
     .eq("student_id", studentId)
-    .in("status", ["draft", "changes_requested"]);
+    .in("status", ["draft", "changes_requested", "approved"]);
 }
