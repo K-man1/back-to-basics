@@ -1,15 +1,16 @@
 import { randomBytes } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { appUrl } from "@/lib/app-url";
 
 export async function GET(req: NextRequest) {
   const session = await auth();
   if (!session?.user?.id) {
-    return NextResponse.redirect(new URL("/dashboard", req.url));
+    return NextResponse.redirect(appUrl("/dashboard", req));
   }
 
   const state = randomBytes(16).toString("hex");
-  const redirectUri = new URL("/api/hackatime/callback", req.url).toString();
+  const redirectUri = appUrl("/api/hackatime/callback", req);
 
   // Where the callback should land the user afterwards. Allowlisted so the
   // param can't be abused as an open redirect.

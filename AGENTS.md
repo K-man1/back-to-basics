@@ -17,7 +17,18 @@ via an installed `b2b-report` CLI + AGENTS.md snippet; that whole mechanism
 was removed in favor of Lapse + self-written journals.)
 
 Stack:
-- Next.js (App Router) + Tailwind, Geist Mono as the default font
+- Next.js (App Router) + Tailwind, Geist Mono as the default font. Dark mode
+  is a palette flip, not `dark:` variants: `src/app/globals.css` mirrors the
+  zinc ramp (50↔950 … 500 stays) and the accent shades inside one
+  `@media (prefers-color-scheme: dark)` block, and Tailwind v4 utilities all
+  compile to `var(--color-*)`, so every existing className follows. Write new
+  UI in the light palette only; if something needs a colour outside the theme,
+  add a semantic var (see `--code-bg`, `--grid-cell`) rather than a `dark:`
+  class. The palette is keyed off `<html data-theme>`, which the inline
+  `THEME_INIT_SCRIPT` (`src/lib/theme.ts`, run from `<head>` in the root
+  layout) resolves before first paint: a saved `localStorage.theme` wins,
+  otherwise it follows the OS. `ThemeToggle` (Settings → Appearance) is the
+  only thing that writes that key.
 - Auth: Hack Club Auth (`auth.hackclub.com`), a standard OAuth 2.0 provider —
   custom Auth.js provider at `src/lib/hackclub-provider.ts`, wired up in
   `src/auth.ts`. Docs: https://auth.hackclub.com/docs/oauth-guide
@@ -87,7 +98,11 @@ Stack:
   can be Level 1 in an ML pipeline and Level 3 in a to-do app. Difficulty
   scaling belongs in Depth's gates only; don't add difficulty multipliers to the
   coin formula. Rubric wording lives only in `rubric.ts`; the reviewer form,
-  the student's project page and `/rubric` all render from it.
+  the student's project page and `/rubric` all render from it. `RubricTable`
+  renders **only** the level matrix (`AXES[].levels`) — the user cut the gate
+  ladders, `SCORING_RULES` and `WORKED_EXAMPLES` from every page as too much
+  wall-of-text. They stay in `rubric.ts` as the written grading standard;
+  don't re-add them to the UI without asking.
 - App shell under `/dashboard` (gated by `src/app/dashboard/layout.tsx`):
   My Projects (index), Explore (public approved projects), Review (queue,
   reviewers only), Shop (placeholder — reward mechanism not decided),
@@ -102,6 +117,21 @@ Stack:
   to dashboard" button runs a server action that calls `markOnboarded()`
   and redirects — that's the only thing that sets `onboarded_at`, so until
   they click it they keep landing back on onboarding.
+- Hosting: self-hosted on the user's Hack Club Nest container (Debian 13,
+  2 CPU / 2 GB, `ssh karman@hackclub.app`, root), NOT Vercel. The app lives
+  at `/root/back-to-basics`, runs `next start -H :: -p 3000` under the
+  `b2b` systemd unit, and is built on the box (`deploy/deploy.sh` does
+  pull → `npm ci` → build → restart; the unit file is `deploy/b2b.service`).
+  Nest's own reverse proxy terminates TLS and routes each registered domain
+  to a container port, so several sites coexist on one container by port
+  alone — no nginx inside (a Flask app, PaperFill, already holds 8080).
+  Because that proxy speaks plain http to the app, `req.url` reports the
+  wrong scheme: build public absolute URLs with `appUrl()`
+  (`src/lib/app-url.ts`), which prefers `APP_URL`. Auth.js needs `AUTH_URL`
+  for the same reason (setting it also flips `trustHost` on).
+  `b2b.hackclub.app` is canonical; `back-to-basics.hackclub.app` is a
+  host-matched 301 in `next.config.ts`. Secrets live only in
+  `/root/back-to-basics/.env.local` (chmod 600), never in git.
 
 Open decisions not yet made (flag to the user, don't guess):
 - Real landing page / program copy — `src/app/page.tsx` is placeholder text.

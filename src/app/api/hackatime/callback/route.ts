@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { appUrl } from "@/lib/app-url";
 import { getOrCreateStudent, setHackatimeAccessToken } from "@/lib/students";
 
 export async function GET(req: NextRequest) {
   const session = await auth();
   if (!session?.user?.id) {
-    return NextResponse.redirect(new URL("/dashboard", req.url));
+    return NextResponse.redirect(appUrl("/dashboard", req));
   }
 
   const code = req.nextUrl.searchParams.get("code");
@@ -19,11 +20,11 @@ export async function GET(req: NextRequest) {
 
   if (!code || !state || !expectedState || state !== expectedState) {
     return NextResponse.redirect(
-      new URL(`${next}?hackatime_error=state`, req.url),
+      appUrl(`${next}?hackatime_error=state`, req),
     );
   }
 
-  const redirectUri = new URL("/api/hackatime/callback", req.url).toString();
+  const redirectUri = appUrl("/api/hackatime/callback", req);
 
   const tokenRes = await fetch("https://hackatime.hackclub.com/oauth/token", {
     method: "POST",
@@ -39,7 +40,7 @@ export async function GET(req: NextRequest) {
 
   if (!tokenRes.ok) {
     return NextResponse.redirect(
-      new URL(`${next}?hackatime_error=token`, req.url),
+      appUrl(`${next}?hackatime_error=token`, req),
     );
   }
 
@@ -47,7 +48,7 @@ export async function GET(req: NextRequest) {
   const accessToken = tokenBody?.access_token;
   if (typeof accessToken !== "string") {
     return NextResponse.redirect(
-      new URL(`${next}?hackatime_error=token`, req.url),
+      appUrl(`${next}?hackatime_error=token`, req),
     );
   }
 
@@ -59,7 +60,7 @@ export async function GET(req: NextRequest) {
   );
   await setHackatimeAccessToken(student.id, accessToken);
 
-  const res = NextResponse.redirect(new URL(next, req.url));
+  const res = NextResponse.redirect(appUrl(next, req));
   res.cookies.delete("hackatime_oauth_state");
   res.cookies.delete("hackatime_oauth_next");
   return res;

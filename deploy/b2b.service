@@ -1,0 +1,16 @@
+[Unit]
+Description=Back to Basics (Next.js)
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/root/back-to-basics
+Environment=NODE_ENV=production
+# -H :: so the Nest reverse proxy can reach it over either the container's
+# IPv4 or IPv6 address; 127.0.0.1 would be unreachable from outside.
+ExecStart=/root/back-to-basics/node_modules/.bin/next start -H :: -p 3000
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
