@@ -12,10 +12,10 @@
 // "standalone": getting the plugin's files onto disk cannot depend on the
 // student already having Claude Code installed (most of them will not), so
 // those go through install.sh instead and then run install-hooks themselves.
-// `perProject` marks the few tools that have no user-level hook config, so
-// install-hooks can only wire up one repo at a time and has to be re-run in
-// each new one. Everything else installs machine-wide and is genuinely
-// once-and-done. Kept in sync by hand with the `user` keys in core/adapters.py.
+// `perProject` marks the two tools that cannot be wired up machine-wide, so
+// install-hooks has to be re-run in each repo. Everything else installs once
+// and covers every project. Kept in sync by hand with the `user`/`user_dirs`
+// keys in core/adapters.py, where the reason for each is documented.
 export interface EditorTool {
   label: string;
   slug: string;
@@ -41,14 +41,14 @@ export const EDITOR_TOOLS: EditorTool[] = [
   {
     label: "Kiro", slug: "kiro", logo: "kiro.png", supported: true, install: "standalone",
     perProject: true,
-    note: "Kiro's exact hook payload isn't published, so this is best-effort. "
-      + "If edits never show up under Projects, run the install-hooks command "
-      + "again with AIATTR_DEBUG=1 set and check the output.",
+    note: "Kiro only reads machine-wide hooks in its v3 CLI (early access) — "
+      + "the IDE has an open bug for it — so this is set up per project. "
+      + "Its exact hook payload isn't published either, so if edits never show "
+      + "up under Projects, re-run the command with AIATTR_DEBUG=1 set.",
   },
-  { label: "Qoder", slug: "qoder", logo: "qoder.png", supported: true, install: "standalone", perProject: true },
+  { label: "Qoder", slug: "qoder", logo: "qoder.png", supported: true, install: "standalone" },
   {
     label: "Devin", slug: "devin", logo: "devin.png", supported: true, install: "standalone",
-    perProject: true,
     note: "CLI only -- Devin's default cloud sessions have no local hook to attach to.",
   },
   { label: "Codex", slug: "codex", logo: "codex.png", supported: true, install: "standalone" },
@@ -58,7 +58,7 @@ export const EDITOR_TOOLS: EditorTool[] = [
     note: "opencode's hooks are real TypeScript plugin code, not a config file "
       + "we can generate. Not supported yet.",
   },
-  { label: "Goose", slug: "goose", logo: "goose.png", supported: true, install: "standalone", perProject: true },
+  { label: "Goose", slug: "goose", logo: "goose.png", supported: true, install: "standalone" },
   { label: "Qwen Code", slug: "qwen-code", logo: "qwen.png", supported: true, install: "standalone" },
   {
     label: "Amp", slug: "amp", logo: "amp.png", supported: false, install: "standalone",
@@ -66,12 +66,20 @@ export const EDITOR_TOOLS: EditorTool[] = [
       + "writing a JS plugin. Not supported yet.",
   },
   { label: "GitHub Copilot CLI", slug: "github-copilot-cli", logo: "copilot.png", supported: true, install: "standalone" },
-  { label: "Cline", slug: "cline", logo: "cline.png", supported: true, install: "standalone", perProject: true },
+  { label: "Cline", slug: "cline", logo: "cline.png", supported: true, install: "standalone" },
   {
     label: "Roo Code", slug: "roo-code", logo: "roo-code.png", supported: false, install: "standalone",
     note: "Roo Code's hooks are an open, unmerged feature request. Not supported yet.",
   },
-  { label: "GitHub Copilot", slug: "github-copilot", logo: "copilot.png", supported: true, install: "standalone", perProject: true },
+  {
+    label: "GitHub Copilot", slug: "github-copilot", logo: "copilot.png",
+    supported: true, install: "standalone", perProject: true,
+    note: "GitHub documents hooks for the Copilot CLI and the Copilot cloud "
+      + "agent, not for Copilot inside VS Code. The cloud agent runs in a "
+      + "throwaway clone that cannot see machine-wide settings, so its hooks "
+      + "have to live in each repo. If you use Copilot in the terminal, pick "
+      + "GitHub Copilot CLI instead — that one sets up once.",
+  },
   {
     label: "Cody", slug: "cody", logo: "cody.png", supported: false, install: "standalone",
     note: "No hook mechanism found in Cody's current docs. Not supported yet.",
