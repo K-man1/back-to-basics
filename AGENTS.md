@@ -117,21 +117,21 @@ Stack:
   to dashboard" button runs a server action that calls `markOnboarded()`
   and redirects — that's the only thing that sets `onboarded_at`, so until
   they click it they keep landing back on onboarding.
-- Hosting: self-hosted on the user's Hack Club Nest container (Debian 13,
-  2 CPU / 2 GB, `ssh karman@hackclub.app`, root), NOT Vercel. The app lives
-  at `/root/back-to-basics`, runs `next start -H :: -p 3000` under the
-  `b2b` systemd unit, and is built on the box (`deploy/deploy.sh` does
-  pull → `npm ci` → build → restart; the unit file is `deploy/b2b.service`).
-  Nest's own reverse proxy terminates TLS and routes each registered domain
-  to a container port, so several sites coexist on one container by port
-  alone — no nginx inside (a Flask app, PaperFill, already holds 8080).
-  Because that proxy speaks plain http to the app, `req.url` reports the
-  wrong scheme: build public absolute URLs with `appUrl()`
-  (`src/lib/app-url.ts`), which prefers `APP_URL`. Auth.js needs `AUTH_URL`
-  for the same reason (setting it also flips `trustHost` on).
-  `b2b.hackclub.app` is canonical; `back-to-basics.hackclub.app` is a
-  host-matched permanent (308) redirect in `next.config.ts`. Secrets live only in
-  `/root/back-to-basics/.env.local` (chmod 600), never in git.
+- Hosting: **Vercel**. Pushing `main` deploys; there is no manual deploy step.
+  `back-to-basics-cyan.vercel.app` serves the app.
+
+  `deploy/deploy.sh` and `deploy/b2b.service` are leftovers from an earlier
+  self-hosted Nest setup (systemd unit, ssh, build-on-the-box). They no longer
+  describe how this ships — an agent session followed them, ran the ssh
+  redeploy, and could not work out why a pushed change was not live. Delete
+  them or keep them clearly labelled, but do not treat them as current.
+
+  Still true regardless of host, because these are app-side: build public
+  absolute URLs with `appUrl()` (`src/lib/app-url.ts`, prefers `APP_URL`)
+  rather than reading `req.url`, and Auth.js wants `AUTH_URL` set (which also
+  flips `trustHost` on). `back-to-basics.hackclub.app` is a host-matched
+  permanent (308) redirect in `next.config.ts`. Secrets live in Vercel's
+  environment settings and `.env.local` locally, never in git.
 
 Open decisions not yet made (flag to the user, don't guess):
 - Real landing page / program copy — `src/app/page.tsx` is placeholder text.

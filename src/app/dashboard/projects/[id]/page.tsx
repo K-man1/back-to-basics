@@ -4,7 +4,7 @@ import { auth } from "@/auth";
 import { getOrCreateStudent } from "@/lib/students";
 import { getProjectById, missingSubmitRequirements } from "@/lib/projects";
 import { getHackatimeStatsForStudent } from "@/lib/hackatime";
-import { getKeyInfo, listReposByStudent } from "@/lib/attribution";
+import { getKeyInfo, listReposByStudent, summarise } from "@/lib/attribution";
 import {
   getEntriesForProject,
   gradedLevels,
@@ -182,6 +182,14 @@ export default async function ProjectDetailPage({
     .filter((p) => project.hackatime_project_names.includes(p.name))
     .reduce((sum, p) => sum + p.total_seconds, 0);
 
+  // Only the repos this project actually selected, the same way linkedSeconds
+  // narrows Hackatime projects. Summing every repo the student has ever opened
+  // would describe their whole machine rather than this project.
+  const linkedRepos = attributionRepos.filter((r) =>
+    project.attribution_repo_keys.includes(r.repo_key),
+  );
+  const linkedAttribution = summarise(linkedRepos);
+
   // Ungraded entries are worth nothing until the review pass, so pre-review
   // this sits at zero — `best` shows what the entries already written can
   // unlock if they all grade out at the top level.
@@ -284,7 +292,7 @@ export default async function ProjectDetailPage({
         deleteAction={deleteProjectAction.bind(null, project.id)}
       />
 
-      <div className="grid grid-cols-2 divide-x divide-zinc-200 border border-zinc-200 bg-white text-sm">
+      <div className="grid grid-cols-3 divide-x divide-zinc-200 border border-zinc-200 bg-white text-sm">
         <div className="p-4">
           <p className="text-2xl text-zinc-900">
             {(linkedSeconds / 3600).toFixed(2)}
@@ -295,7 +303,27 @@ export default async function ProjectDetailPage({
           <p className="text-2xl text-zinc-900">{entries.length}</p>
           <p className="mt-1 text-zinc-500">Journal Entries</p>
         </div>
+        {/* The band, not a percentage. A number here would invite optimising
+            against it, and on its own it hides how much of the project was
+            actually tracked. Reviewers get the exact figure on the review page.
+            An em dash covers both "no repositories linked" and "too little
+            tracked to say" — neither is a finding, and neither is 0%. */}
+        <div className="p-4">
+          <p className="text-2xl text-zinc-900">
+            {linkedAttribution.band === "unknown"
+              ? "—"
+              : linkedAttribution.bandLabel}
+          </p>
+          <p className="mt-1 text-zinc-500">AI Usage</p>
+        </div>
       </div>
+      {linkedAttribution.band === "unknown" ? (
+        <p className="-mt-6 text-xs text-zinc-500">
+          {linkedRepos.length === 0
+            ? "Link a code repository below to see how much of this project an agent wrote."
+            : `Only ${linkedAttribution.observedPercent}% of this project was tracked, which is too little to say. Code written before the plugin was installed is not counted either way.`}
+        </p>
+      ) : null}
 
       <section className="flex flex-col gap-4">
         <div className="flex flex-wrap items-baseline justify-between gap-3">
