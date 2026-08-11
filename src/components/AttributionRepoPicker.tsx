@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { AttributionRepo } from "@/lib/attribution";
+import { summarise } from "@/lib/attribution";
 
 // Which tracked repos count toward this project. Same shape and interaction as
 // HackatimeProjectPicker — the student selects from what was already observed
@@ -9,10 +10,26 @@ import type { AttributionRepo } from "@/lib/attribution";
 
 const INITIAL_VISIBLE = 12;
 
+// The student sees a band, not a percentage. Exact figures are a reviewer's
+// tool: a number on a chip invites optimising against it, and it is the least
+// reliable reading of the three since it says nothing about coverage.
+//
+// `total === 0` means no roll-up has arrived yet, which is NOT the same as a
+// project with no AI in it. Saying "0% AI" for it was a real bug: a student who
+// built a whole site with an agent and had not closed their session saw
+// "0% AI" and reasonably concluded the tool was broken.
 function split(repo: AttributionRepo) {
-  const total = repo.ai_sig + repo.human_sig + repo.unobserved_sig;
-  const aiPercent = total > 0 ? Math.round((100 * repo.ai_sig) / total) : 0;
-  return { total, aiPercent };
+  const summary = summarise([repo]);
+  return {
+    total: summary.total,
+    band: summary.band,
+    label: summary.bandLabel,
+    detail:
+      summary.total === 0
+        ? "Nothing reported yet for this repository"
+        : `${repo.ai_sig} AI / ${repo.human_sig} you / ${repo.unobserved_sig} unobserved ` +
+          `(significant lines; ${summary.observedPercent}% of it was tracked)`,
+  };
 }
 
 export default function AttributionRepoPicker({
@@ -63,15 +80,11 @@ export default function AttributionRepoPicker({
       <div className="flex flex-wrap gap-2">
         {visible.map((repo) => {
           const isSelected = selected.has(repo.repo_key);
-          const { total, aiPercent } = split(repo);
+          const { band, label, detail } = split(repo);
           return (
             <label
               key={repo.repo_key}
-              title={
-                total > 0
-                  ? `${repo.ai_sig} AI / ${repo.human_sig} you / ${repo.unobserved_sig} unobserved (significant lines)`
-                  : "No lines recorded yet"
-              }
+              title={detail}
               className={`cursor-pointer rounded border px-3 py-1.5 text-xs transition-colors ${
                 isSelected
                   ? "border-zinc-900 bg-zinc-900 text-white"
@@ -87,7 +100,7 @@ export default function AttributionRepoPicker({
                 className="sr-only"
               />
               {repo.name}
-              {total > 0 ? ` (${aiPercent}% AI)` : ""}
+              {band === "unknown" ? "" : ` — AI: ${label}`}
             </label>
           );
         })}

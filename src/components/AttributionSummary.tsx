@@ -79,14 +79,25 @@ export default function AttributionSummary({
       <div className="flex flex-col gap-1">
         <div className="flex items-baseline justify-between">
           <p className="text-zinc-600">
-            {hasVerified ? "Verified" : "Self-reported"}
+            {hasVerified ? "Verified" : "Reported as you worked"}
           </p>
+          {/* Students see the band; reviewers see the band and the number
+              behind it. A percentage on its own is the least trustworthy of the
+              three readings, because it says nothing about how much of the
+              project was actually watched. */}
           <p className="text-zinc-900">
             {hasVerified
               ? vAdded > 0
-                ? `${Math.round((100 * vAi) / vAdded)}% AI`
+                ? `AI: ${Math.round((100 * vAi) / vAdded)}%`
                 : "no lines"
-              : `${summary.aiPercent}% AI`}
+              : summary.total === 0
+                ? "not reported yet"
+                : forReviewer
+                  ? `AI: ${summary.bandLabel}` +
+                    (summary.aiPercentOfObserved === null
+                      ? ""
+                      : ` (${summary.aiPercentOfObserved}% of ${summary.observedPercent}% tracked)`)
+                  : `AI: ${summary.bandLabel}`}
           </p>
         </div>
 
@@ -158,6 +169,28 @@ export default function AttributionSummary({
       <p className="text-xs text-zinc-500">
         {repos.map((r) => r.name).join(", ")}
       </p>
+
+      {/* The old copy promised the numbers were "verified from GitHub" once a
+          check ran. No worker performs that check yet, and most repos arrive
+          with remote = null because they are not git repositories at all, so
+          the sentence described something that could not happen. What is
+          actually true is worth more: records reach this server as each edit
+          lands, before a student has any reason to want them different. */}
+      <p className="text-xs text-zinc-500">
+        {hasVerified
+          ? "Reconciled against the commits in this repository."
+          : forReviewer
+            ? "Each edit was streamed here as it happened, so these records cannot be revised after the fact. The percentages are computed on the student's machine. Not cross-checked against commit history."
+            : "Reported by the plugin on your machine as you work."}
+      </p>
+
+      {forReviewer && !hasVerified && summary.band === "unknown" && summary.total > 0 ? (
+        <p className="text-xs text-zinc-500">
+          Only {summary.observedPercent}% of this project was tracked, which is
+          too little to characterise. Usually means the plugin was installed
+          after the work started.
+        </p>
+      ) : null}
 
       {forReviewer && critical.length > 0 ? (
         <ul className="flex flex-col gap-1 text-xs text-amber-700">

@@ -623,12 +623,47 @@ export async function recordVerifications(
   return valid.length;
 }
 
+// --- the coarse label students see ----------------------------------------
+//
+// Must stay in step with core/report.py in the plugin, which computes the same
+// band client-side. Duplicated here only because the sync payload's `band`
+// object has nowhere to live until attribution_repos gains a column for it;
+// once it does, read the client's value and delete these constants rather than
+// keeping two definitions of "high" alive.
+
+export const BAND_HIGH = 60;
+export const BAND_LOW = 20;
+const MIN_OBSERVED_PCT = 20;
+const MIN_OBSERVED_LINES = 25;
+
+export type BandLevel = "low" | "moderate" | "high" | "unknown";
+
+export const BAND_LABELS: Record<BandLevel, string> = {
+  low: "Low",
+  moderate: "Moderate",
+  high: "High",
+  unknown: "Not enough tracked",
+};
+
 export interface AttributionSummary {
   ai: number;
   human: number;
   unobserved: number;
   total: number;
-  aiPercent: number;
+  // Null when nothing has been computed yet. Deliberately NOT 0: a project the
+  // plugin has never rolled up and a project genuinely containing no AI code
+  // look identical at 0% and mean opposite things to a reviewer. Callers must
+  // render the two differently.
+  aiPercent: number | null;
+  // AI as a share of code the plugin actually watched (ai + human), which is
+  // the figure the band is drawn from. `unobserved` lines are excluded because
+  // nobody knows who wrote them; folding them into the denominator reports a
+  // repo that predates tracking as low-AI, which is a guess dressed as a fact.
+  aiPercentOfObserved: number | null;
+  observedPercent: number;
+  observedLines: number;
+  band: BandLevel;
+  bandLabel: string;
   repoCount: number;
   lastActivity: string | null;
 }
@@ -640,17 +675,39 @@ export function summarise(repos: AttributionRepo[]): AttributionSummary {
   const human = repos.reduce((n, r) => n + r.human_sig, 0);
   const unobserved = repos.reduce((n, r) => n + r.unobserved_sig, 0);
   const total = ai + human + unobserved;
+  const observed = ai + human;
+  const observedPercent = total > 0 ? Math.round((100 * observed) / total) : 0;
+  const aiOfObserved =
+    observed > 0 ? Math.round((100 * ai) / observed) : null;
+
+  let band: BandLevel;
+  if (observed < MIN_OBSERVED_LINES || observedPercent < MIN_OBSERVED_PCT) {
+    band = "unknown";
+  } else if (aiOfObserved! >= BAND_HIGH) {
+    band = "high";
+  } else if (aiOfObserved! <= BAND_LOW) {
+    band = "low";
+  } else {
+    band = "moderate";
+  }
+
   const lastActivity = repos
     .map((r) => r.last_activity)
     .filter((d): d is string => Boolean(d))
     .sort()
     .pop();
+
   return {
     ai,
     human,
     unobserved,
     total,
-    aiPercent: total > 0 ? Math.round((100 * ai) / total) : 0,
+    aiPercent: total > 0 ? Math.round((100 * ai) / total) : null,
+    aiPercentOfObserved: aiOfObserved,
+    observedPercent,
+    observedLines: observed,
+    band,
+    bandLabel: BAND_LABELS[band],
     repoCount: repos.length,
     lastActivity: lastActivity ?? null,
   };

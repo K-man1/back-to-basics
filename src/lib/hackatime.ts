@@ -20,7 +20,28 @@ export interface HackatimeProjectStat {
 export interface HackatimeStats {
   totalSeconds: number;
   projects: HackatimeProjectStat[];
+  // Seconds with `category = "ai coding"` excluded, or null when the endpoint
+  // used could not report it. See the note below: this is not the same number
+  // as totalSeconds and choosing between them is a policy decision.
+  humanSeconds: number | null;
 }
+
+// Hours with AI-assisted coding excluded.
+//
+// Hackatime tags heartbeats with a category, and agent integrations (the
+// Claude Code WakaTime plugin, Cursor, Copilot) send `ai coding`. Its stats API
+// takes `no_ai_coding=true`, which drops that category from the totals it
+// returns. `/api/v1/authenticated/hours` does NOT support the flag — it sums
+// every heartbeat regardless of category — so it cannot answer this question at
+// all, which is why the calls below use `/api/v1/users/my/stats` instead.
+// `my` resolves to the OAuth caller and skips the public-stats gate.
+//
+// Measured on a real account before this was written: 177.8h total against
+// 99.5h with AI coding excluded. The gap is not noise, it is 44% of tracked
+// time, and at $5/hr it is the difference between paying $889 and paying $497
+// for the same work. WHICH ONE COUNTS AS PAYABLE IS A PROGRAM DECISION, not a
+// technical one, so both are returned here and neither is silently preferred.
+const STATS_URL = "https://hackatime.hackclub.com/api/v1/users/my/stats";
 
 // Hackatime can return the same project name more than once in a stats window
 // (the catch-all `Other` bucket especially). Names are the identity we key the
@@ -44,30 +65,38 @@ export async function getAuthenticatedHackatimeStats(
 ): Promise<HackatimeStats | null> {
   const headers = { Authorization: `Bearer ${accessToken}` };
   const today = new Date().toISOString().slice(0, 10);
+  const window = `start_date=${VERY_EARLY_DATE}&end_date=${today}`;
 
-  const [hoursRes, projectsRes] = await Promise.all([
-    fetch(
-      `https://hackatime.hackclub.com/api/v1/authenticated/hours?start_date=${VERY_EARLY_DATE}&end_date=${today}`,
-      { headers },
-    ),
-    fetch(
-      `https://hackatime.hackclub.com/api/v1/authenticated/projects?start_date=${VERY_EARLY_DATE}&end_date=${today}`,
-      { headers },
-    ),
+  // Two calls to the same endpoint rather than one: the flag changes the
+  // totals, and the program needs to be able to show both without a second
+  // round trip when someone asks why the numbers differ.
+  const [allRes, humanRes] = await Promise.all([
+    fetch(`${STATS_URL}?${window}&features=projects`, { headers }),
+    fetch(`${STATS_URL}?${window}&total_seconds=true&no_ai_coding=true`, {
+      headers,
+    }),
   ]);
 
-  if (!hoursRes.ok) return null;
+  if (!allRes.ok) return null;
+  const body = await allRes.json().catch(() => null);
+  const data = body?.data;
+  if (typeof data?.total_seconds !== "number") return null;
 
-  const hours = await hoursRes.json().catch(() => null);
-  if (typeof hours?.total_seconds !== "number") return null;
-
-  let projects: HackatimeProjectStat[] = [];
-  if (projectsRes.ok) {
-    const body = await projectsRes.json().catch(() => null);
-    projects = parseProjects(body?.projects);
+  // Deliberately left null rather than defaulted to totalSeconds when the
+  // second call fails. Falling back would quietly report AI time as human time,
+  // which is the one direction of error that costs money.
+  let humanSeconds: number | null = null;
+  if (humanRes.ok) {
+    const h = await humanRes.json().catch(() => null);
+    const seconds = h?.total_seconds ?? h?.data?.total_seconds;
+    if (typeof seconds === "number") humanSeconds = seconds;
   }
 
-  return { totalSeconds: hours.total_seconds, projects };
+  return {
+    totalSeconds: data.total_seconds,
+    projects: parseProjects(data.projects),
+    humanSeconds,
+  };
 }
 
 // Fallback for students who don't (or haven't yet) gone through the OAuth
@@ -84,7 +113,13 @@ export async function getPublicHackatimeStats(
   const data = body?.data;
   if (typeof data?.total_seconds !== "number") return null;
 
-  return { totalSeconds: data.total_seconds, projects: parseProjects(data.projects) };
+  // No AI-excluded figure on this path: it would need a second request and this
+  // is already the degraded fallback for students who never connected OAuth.
+  return {
+    totalSeconds: data.total_seconds,
+    projects: parseProjects(data.projects),
+    humanSeconds: null,
+  };
 }
 
 export async function getHackatimeStatsForStudent(student: {
