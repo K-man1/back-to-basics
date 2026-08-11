@@ -12,12 +12,17 @@
 // "standalone": getting the plugin's files onto disk cannot depend on the
 // student already having Claude Code installed (most of them will not), so
 // those go through install.sh instead and then run install-hooks themselves.
+// `perProject` marks the few tools that have no user-level hook config, so
+// install-hooks can only wire up one repo at a time and has to be re-run in
+// each new one. Everything else installs machine-wide and is genuinely
+// once-and-done. Kept in sync by hand with the `user` keys in core/adapters.py.
 export interface EditorTool {
   label: string;
   slug: string;
   logo: string;
   supported: boolean;
   install: "claude-plugin" | "standalone";
+  perProject?: boolean;
   note?: string;
 }
 
@@ -35,19 +40,16 @@ export const EDITOR_TOOLS: EditorTool[] = [
   { label: "Antigravity", slug: "antigravity", logo: "antigravity.png", supported: true, install: "standalone" },
   {
     label: "Kiro", slug: "kiro", logo: "kiro.png", supported: true, install: "standalone",
+    perProject: true,
     note: "Kiro's exact hook payload isn't published, so this is best-effort. "
       + "If edits never show up under Projects, run the install-hooks command "
       + "again with AIATTR_DEBUG=1 set and check the output.",
   },
-  { label: "Qoder", slug: "qoder", logo: "qoder.png", supported: true, install: "standalone" },
+  { label: "Qoder", slug: "qoder", logo: "qoder.png", supported: true, install: "standalone", perProject: true },
   {
     label: "Devin", slug: "devin", logo: "devin.png", supported: true, install: "standalone",
+    perProject: true,
     note: "CLI only -- Devin's default cloud sessions have no local hook to attach to.",
-  },
-  {
-    label: "VSCodium", slug: "vscodium", logo: "vscodium.png", supported: false, install: "standalone",
-    note: "VSCodium is an editor, not an agent. Set up whichever AI extension "
-      + "you run inside it (Cline, Copilot, ...) using its own entry on this page.",
   },
   { label: "Codex", slug: "codex", logo: "codex.png", supported: true, install: "standalone" },
   { label: "Gemini CLI", slug: "gemini-cli", logo: "gemini-cli.png", supported: true, install: "standalone" },
@@ -56,7 +58,7 @@ export const EDITOR_TOOLS: EditorTool[] = [
     note: "opencode's hooks are real TypeScript plugin code, not a config file "
       + "we can generate. Not supported yet.",
   },
-  { label: "Goose", slug: "goose", logo: "goose.png", supported: true, install: "standalone" },
+  { label: "Goose", slug: "goose", logo: "goose.png", supported: true, install: "standalone", perProject: true },
   { label: "Qwen Code", slug: "qwen-code", logo: "qwen.png", supported: true, install: "standalone" },
   {
     label: "Amp", slug: "amp", logo: "amp.png", supported: false, install: "standalone",
@@ -64,12 +66,12 @@ export const EDITOR_TOOLS: EditorTool[] = [
       + "writing a JS plugin. Not supported yet.",
   },
   { label: "GitHub Copilot CLI", slug: "github-copilot-cli", logo: "copilot.png", supported: true, install: "standalone" },
-  { label: "Cline", slug: "cline", logo: "cline.png", supported: true, install: "standalone" },
+  { label: "Cline", slug: "cline", logo: "cline.png", supported: true, install: "standalone", perProject: true },
   {
     label: "Roo Code", slug: "roo-code", logo: "roo-code.png", supported: false, install: "standalone",
     note: "Roo Code's hooks are an open, unmerged feature request. Not supported yet.",
   },
-  { label: "GitHub Copilot", slug: "github-copilot", logo: "copilot.png", supported: true, install: "standalone" },
+  { label: "GitHub Copilot", slug: "github-copilot", logo: "copilot.png", supported: true, install: "standalone", perProject: true },
   {
     label: "Cody", slug: "cody", logo: "cody.png", supported: false, install: "standalone",
     note: "No hook mechanism found in Cody's current docs. Not supported yet.",
@@ -149,23 +151,42 @@ export function buildSetupCommands(
 
   if (!tool.supported) return [];
 
-  // One command does download, install and connect-to-account: install.sh
-  // takes the key directly so the student never copies it into a second
-  // command, and never types an interpreter name.
-  const commands: SetupCommand[] = opts.key
-    ? [
-        {
-          cmd:
-            `curl -fsSL ${ATTRIBUTION_INSTALL_SCRIPT_URL} | sh -s -- ` +
-            `--key ${opts.key} --endpoint ${opts.origin}`,
-          hint: "Installs it and connects it to your account.",
-        },
-      ]
-    : [];
+  // First-time setup on a machine is a single command: install.sh takes the
+  // key and the tool name, so it downloads, connects to the account, and wires
+  // the hooks up in one go. The student never copies a key between commands
+  // and never types an interpreter name.
+  //
+  // --tool is only folded in for tools that install machine-wide. For the rest
+  // install.sh would be running install-hooks from the home directory, which
+  // is not a project -- the CLI refuses that outright rather than writing a
+  // config nothing reads, so those get their own command with a `cd` to do.
+  if (opts.key) {
+    const first: SetupCommand = {
+      cmd:
+        `curl -fsSL ${ATTRIBUTION_INSTALL_SCRIPT_URL} | sh -s -- ` +
+        `--key ${opts.key} --endpoint ${opts.origin}` +
+        (tool.perProject ? "" : ` --tool ${tool.slug}`),
+      hint: tool.perProject
+        ? "Installs it and connects it to your account."
+        : `That is the whole setup — every project on this computer is covered.`,
+    };
+    if (!tool.perProject) return [first];
+    return [
+      first,
+      {
+        cmd: `${STANDALONE_CLI} install-hooks ${tool.slug}`,
+        hint: `${tool.label} has no machine-wide hook setting, so this covers one project. Run it inside each project folder you build in.`,
+      },
+    ];
+  }
 
-  commands.push({
-    cmd: `${STANDALONE_CLI} install-hooks ${tool.slug}`,
-    hint: `Run this inside each project folder you build in — it wires ${tool.label} up for that project.`,
-  });
-  return commands;
+  // Already set up on this machine, just adding another app.
+  return [
+    {
+      cmd: `${STANDALONE_CLI} install-hooks ${tool.slug}`,
+      hint: tool.perProject
+        ? `${tool.label} has no machine-wide hook setting, so this covers one project. Run it inside each project folder you build in.`
+        : `Covers every project on this computer. You only run this once.`,
+    },
+  ];
 }
