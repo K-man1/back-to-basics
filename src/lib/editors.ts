@@ -12,7 +12,7 @@
 // "standalone": getting the plugin's files onto disk cannot depend on the
 // student already having Claude Code installed (most of them will not), so
 // those go through install.sh instead and then run install-hooks themselves.
-// `perProject` marks the two tools that cannot be wired up machine-wide, so
+// `perProject` marks a tool that cannot be wired up machine-wide, so
 // install-hooks has to be re-run in each repo. Everything else installs once
 // and covers every project. Kept in sync by hand with the `user`/`user_dirs`
 // keys in core/adapters.py, where the reason for each is documented.
@@ -33,10 +33,6 @@ export const EDITOR_TOOLS: EditorTool[] = [
   },
   { label: "Cursor", slug: "cursor", logo: "cursor.png", supported: true, install: "standalone" },
   { label: "Windsurf", slug: "windsurf", logo: "windsurf.png", supported: true, install: "standalone" },
-  {
-    label: "Trae", slug: "trae", logo: "trae.png", supported: false, install: "standalone",
-    note: "Trae has no hook mechanism yet (open, unimplemented feature request).",
-  },
   { label: "Antigravity", slug: "antigravity", logo: "antigravity.png", supported: true, install: "standalone" },
   {
     label: "Kiro", slug: "kiro", logo: "kiro.png", supported: true, install: "standalone",
@@ -60,30 +56,8 @@ export const EDITOR_TOOLS: EditorTool[] = [
   },
   { label: "Goose", slug: "goose", logo: "goose.png", supported: true, install: "standalone" },
   { label: "Qwen Code", slug: "qwen-code", logo: "qwen.png", supported: true, install: "standalone" },
-  {
-    label: "Amp", slug: "amp", logo: "amp.png", supported: false, install: "standalone",
-    note: "Amp has no declarative shell-command hook; reaching one means "
-      + "writing a JS plugin. Not supported yet.",
-  },
   { label: "GitHub Copilot CLI", slug: "github-copilot-cli", logo: "copilot.png", supported: true, install: "standalone" },
   { label: "Cline", slug: "cline", logo: "cline.png", supported: true, install: "standalone" },
-  {
-    label: "Roo Code", slug: "roo-code", logo: "roo-code.png", supported: false, install: "standalone",
-    note: "Roo Code's hooks are an open, unmerged feature request. Not supported yet.",
-  },
-  {
-    label: "GitHub Copilot", slug: "github-copilot", logo: "copilot.png",
-    supported: true, install: "standalone", perProject: true,
-    note: "GitHub documents hooks for the Copilot CLI and the Copilot cloud "
-      + "agent, not for Copilot inside VS Code. The cloud agent runs in a "
-      + "throwaway clone that cannot see machine-wide settings, so its hooks "
-      + "have to live in each repo. If you use Copilot in the terminal, pick "
-      + "GitHub Copilot CLI instead — that one sets up once.",
-  },
-  {
-    label: "Cody", slug: "cody", logo: "cody.png", supported: false, install: "standalone",
-    note: "No hook mechanism found in Cody's current docs. Not supported yet.",
-  },
 ];
 
 export const ATTRIBUTION_MARKETPLACE_URL =
@@ -189,12 +163,12 @@ export function buildSetupCommands(
   }
 
   // Already set up on this machine, just adding another app.
-  return [
-    {
-      cmd: `${STANDALONE_CLI} install-hooks ${tool.slug}`,
-      hint: tool.perProject
-        ? `${tool.label} has no machine-wide hook setting, so this covers one project. Run it inside each project folder you build in.`
-        : `Covers every project on this computer. You only run this once.`,
-    },
-  ];
+  const command: SetupCommand = {
+    cmd: `${STANDALONE_CLI} install-hooks ${tool.slug}`,
+  };
+  if (tool.perProject) {
+    command.hint =
+      `${tool.label} has no machine-wide hook setting, so this covers one project. Run it inside each project folder you build in.`;
+  }
+  return [command];
 }
