@@ -121,7 +121,7 @@ export function buildSetupCommands(
     ];
     if (opts.key) {
       commands.push(
-        `python3 ${CLAUDE_PLUGIN_CLI} configure --key ${opts.key} --endpoint ${opts.origin}`,
+        `python3 ${CLAUDE_PLUGIN_CLI} configure --key ${opts.key} --endpoint ${opts.origin} --enable-hackatime`,
       );
     }
     return commands;
@@ -130,7 +130,7 @@ export function buildSetupCommands(
   const commands = [`curl -fsSL ${ATTRIBUTION_INSTALL_SCRIPT_URL} | sh`];
   if (opts.key) {
     commands.push(
-      `python3 ${STANDALONE_CLI} configure --key ${opts.key} --endpoint ${opts.origin}`,
+      `python3 ${STANDALONE_CLI} configure --key ${opts.key} --endpoint ${opts.origin} --enable-hackatime`,
     );
   }
   if (tool.supported) {

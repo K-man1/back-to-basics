@@ -36,15 +36,16 @@ export default async function DashboardLayout({
     );
   }
 
-  // New users must finish onboarding before reaching any dashboard route.
+  // A brand-new student sees the AI-app picker once, before their first
+  // dashboard view, instead of a separate onboarding page.
   const student = await getOrCreateStudent(
     session.user.id,
     session.user.slackId,
     session.user.name ?? null,
     session.user.email ?? null,
   );
-  if (!student.onboarded_at) {
-    redirect("/onboarding");
+  if (student.isNew) {
+    redirect("/editors?next=/dashboard");
   }
 
   const reviewer = await getReviewerForStudent(student.id);

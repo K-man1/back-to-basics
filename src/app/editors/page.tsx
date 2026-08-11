@@ -3,7 +3,8 @@ import EditorSetup from "@/components/EditorSetup";
 import { getOrCreateStudent } from "@/lib/students";
 import { getKeyInfo } from "@/lib/attribution";
 
-// Shared "set up your AI app" page, reached from both onboarding and settings.
+// The AI-app picker: a new student's first stop after signing in (see
+// dashboard/layout.tsx), also reachable any time from Settings.
 // `next` is where Continue returns to; only same-site relative paths are
 // allowed so it can't be used as an open redirect.
 function safeNext(next: string | undefined): string {

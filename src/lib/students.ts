@@ -11,12 +11,15 @@ export interface Student {
   created_at: string;
 }
 
+// `isNew` tells the caller whether this call is what created the row — the
+// dashboard layout uses it to send a brand-new student to the AI-app picker
+// once, on their very first visit, instead of a separate onboarding page.
 export async function getOrCreateStudent(
   hackclubId: string,
   slackId: string | null,
   name: string | null,
   email: string | null,
-): Promise<Student> {
+): Promise<Student & { isNew: boolean }> {
   const supabase = supabaseAdmin();
 
   const { data: existing } = await supabase
@@ -33,9 +36,9 @@ export async function getOrCreateStudent(
         .eq("id", existing.id)
         .select()
         .single();
-      if (updated) return updated as Student;
+      if (updated) return { ...(updated as Student), isNew: false };
     }
-    return existing as Student;
+    return { ...(existing as Student), isNew: false };
   }
 
   const { data: created, error } = await supabase
@@ -48,7 +51,7 @@ export async function getOrCreateStudent(
     throw new Error(`failed to create student: ${error?.message}`);
   }
 
-  return created as Student;
+  return { ...(created as Student), isNew: true };
 }
 
 export async function getStudentById(studentId: string): Promise<Student | null> {
@@ -72,10 +75,3 @@ export async function setHackatimeAccessToken(
     .eq("id", studentId);
 }
 
-export async function markOnboarded(studentId: string): Promise<void> {
-  const supabase = supabaseAdmin();
-  await supabase
-    .from("students")
-    .update({ onboarded_at: new Date().toISOString() })
-    .eq("id", studentId);
-}

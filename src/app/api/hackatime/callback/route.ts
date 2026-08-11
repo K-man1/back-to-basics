@@ -12,11 +12,7 @@ export async function GET(req: NextRequest) {
   const code = req.nextUrl.searchParams.get("code");
   const state = req.nextUrl.searchParams.get("state");
   const expectedState = req.cookies.get("hackatime_oauth_state")?.value;
-
-  // Set by /api/hackatime/connect from an allowlist — send the user back to
-  // wherever they started the connect flow (onboarding or settings).
-  const nextCookie = req.cookies.get("hackatime_oauth_next")?.value;
-  const next = nextCookie === "/onboarding" ? "/onboarding" : "/dashboard/settings";
+  const next = "/dashboard/settings";
 
   if (!code || !state || !expectedState || state !== expectedState) {
     return NextResponse.redirect(
@@ -62,6 +58,5 @@ export async function GET(req: NextRequest) {
 
   const res = NextResponse.redirect(appUrl(next, req));
   res.cookies.delete("hackatime_oauth_state");
-  res.cookies.delete("hackatime_oauth_next");
   return res;
 }

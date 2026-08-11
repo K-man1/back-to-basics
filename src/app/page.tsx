@@ -3,7 +3,6 @@ import GridBackground from "@/components/GridBackground";
 import ScrambleText from "@/components/ScrambleText";
 import HowItWorks from "@/components/HowItWorks";
 import { auth, signIn } from "@/auth";
-import { getOrCreateStudent } from "@/lib/students";
 
 // Single source of truth for the sign-in flow — reused by the nav, the hero
 // and the closing CTA below.
@@ -69,13 +68,8 @@ const FAQS = [
 export default async function Home() {
   const session = await auth();
   if (session?.user?.id) {
-    const student = await getOrCreateStudent(
-      session.user.id,
-      session.user.slackId,
-      session.user.name ?? null,
-      session.user.email ?? null,
-    );
-    redirect(student.onboarded_at ? "/dashboard" : "/onboarding");
+    // Dashboard layout handles routing a brand-new student to /editors first.
+    redirect("/dashboard");
   }
 
   return (
