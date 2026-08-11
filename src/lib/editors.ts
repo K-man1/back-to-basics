@@ -49,11 +49,6 @@ export const EDITOR_TOOLS: EditorTool[] = [
     note: "VSCodium is an editor, not an agent. Set up whichever AI extension "
       + "you run inside it (Cline, Copilot, ...) using its own entry on this page.",
   },
-  {
-    label: "code-server", slug: "code-server", logo: "code-server.png", supported: false, install: "standalone",
-    note: "code-server is a host, not an agent. Set up whichever AI extension "
-      + "you run inside it using its own entry on this page.",
-  },
   { label: "Codex", slug: "codex", logo: "codex.png", supported: true, install: "standalone" },
   { label: "Gemini CLI", slug: "gemini-cli", logo: "gemini-cli.png", supported: true, install: "standalone" },
   {
@@ -95,46 +90,82 @@ export const ATTRIBUTION_INSTALL_SCRIPT_URL =
 // expands to more than one path -- which breaks whatever command follows it,
 // silently, well after setup. This is the one form that stays correct across
 // an update.
+//
+// The interpreter is discovered rather than hardcoded to `python3`, because
+// plenty of machines (Windows especially, where `python3` is often the
+// Microsoft Store stub) only have a working Python 3 under the name `python`.
+// Standalone installs do not need this -- install.sh writes a launcher that
+// resolves the interpreter once, which is why those commands are one-liners.
 const CLAUDE_PLUGIN_CLI =
+  '$(command -v python3 || command -v python) ' +
   '"$(ls -d ~/.claude/plugins/cache/ai-attribution-marketplace/ai-attribution/*/ ' +
   '| sort -V | tail -1)cli/aiattr.py"';
 
-// install.sh always replaces the same fixed directory on re-run (see its own
-// comment for why), so there is no multi-version glob hazard here at all --
-// this path never has more than one thing it could resolve to.
-const STANDALONE_CLI = '"$HOME/.ai-attribution/plugin/cli/aiattr.py"';
+// The launcher install.sh writes. Fixed path with no glob: install.sh always
+// replaces the same directory on re-run, so this never resolves to two things.
+const STANDALONE_CLI = '"$HOME/.ai-attribution/bin/aiattr"';
 
 /**
- * The commands a student runs for one tool. `key` is only passed when a fresh
- * plaintext key was just issued this session -- otherwise the configure line
- * is omitted rather than showing a stale or fake value, because printing a
- * key we do not actually have would be worse than not printing one.
+ * The commands a student runs for one tool.
+ *
+ * `key` carries the whole "which computer is this" decision. A plaintext key
+ * exists only when one was just issued, which happens in exactly two cases:
+ * the student has never set up at all, or they explicitly asked for a new
+ * computer. Both need the full install. When it is null, the student already
+ * has a working machine and is only adding another app to it -- the plugin and
+ * their key are already on disk, so re-running the installer would be noise.
+ * That is why the short list is the default rather than something to opt into.
  */
+export interface SetupCommand {
+  cmd: string;
+  // Shown under the command. Only present where running it in the wrong place
+  // silently does nothing, which is the one mistake this flow cannot detect.
+  hint?: string;
+}
+
 export function buildSetupCommands(
   tool: EditorTool,
   opts: { key: string | null; origin: string },
-): string[] {
+): SetupCommand[] {
   if (tool.install === "claude-plugin") {
-    const commands = [
-      `claude plugin marketplace add ${ATTRIBUTION_MARKETPLACE_URL}`,
-      "claude plugin install ai-attribution@ai-attribution-marketplace --scope user",
+    // Claude Code registers the plugin's hooks itself on install, so there is
+    // never an install-hooks step here.
+    const commands: SetupCommand[] = [
+      { cmd: `claude plugin marketplace add ${ATTRIBUTION_MARKETPLACE_URL}` },
+      {
+        cmd: "claude plugin install ai-attribution@ai-attribution-marketplace --scope user",
+      },
     ];
     if (opts.key) {
-      commands.push(
-        `python3 ${CLAUDE_PLUGIN_CLI} configure --key ${opts.key} --endpoint ${opts.origin} --enable-hackatime`,
-      );
+      commands.push({
+        cmd: `${CLAUDE_PLUGIN_CLI} configure --key ${opts.key} --endpoint ${opts.origin} --enable-hackatime`,
+        hint: "Connects it to your account. Restart Claude Code afterwards.",
+      });
+    } else {
+      commands[commands.length - 1].hint = "Restart Claude Code afterwards.";
     }
     return commands;
   }
 
-  const commands = [`curl -fsSL ${ATTRIBUTION_INSTALL_SCRIPT_URL} | sh`];
-  if (opts.key) {
-    commands.push(
-      `python3 ${STANDALONE_CLI} configure --key ${opts.key} --endpoint ${opts.origin} --enable-hackatime`,
-    );
-  }
-  if (tool.supported) {
-    commands.push(`python3 ${STANDALONE_CLI} install-hooks ${tool.slug}`);
-  }
+  if (!tool.supported) return [];
+
+  // One command does download, install and connect-to-account: install.sh
+  // takes the key directly so the student never copies it into a second
+  // command, and never types an interpreter name.
+  const commands: SetupCommand[] = opts.key
+    ? [
+        {
+          cmd:
+            `curl -fsSL ${ATTRIBUTION_INSTALL_SCRIPT_URL} | sh -s -- ` +
+            `--key ${opts.key} --endpoint ${opts.origin}`,
+          hint: "Installs it and connects it to your account.",
+        },
+      ]
+    : [];
+
+  commands.push({
+    cmd: `${STANDALONE_CLI} install-hooks ${tool.slug}`,
+    hint: `Run this inside each project folder you build in — it wires ${tool.label} up for that project.`,
+  });
   return commands;
 }

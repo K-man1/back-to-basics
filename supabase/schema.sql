@@ -121,6 +121,33 @@ create table attribution_keys (
   last_used_at timestamptz
 );
 
+-- Which AI coding apps a student has set up, and whether each one has actually
+-- reported anything yet. Two timestamps because they answer two different
+-- questions and only the second one is evidence:
+--
+--   connected_at      -- the student picked this app on /editors. A claim of
+--                        intent, nothing more: we cannot see their machine, so
+--                        a row here does NOT mean the hooks are installed or
+--                        even that the app exists on their computer.
+--   first_activity_at -- the first ledger record we received carrying this
+--                        agent slug. This one is real: it means the hooks ran,
+--                        the key worked, and the whole chain is live.
+--
+-- Rows are created from both directions. The website inserts on setup; the
+-- record ingest path inserts too, so an app that starts reporting without ever
+-- being picked on the site still shows up rather than being invisible.
+create table attribution_agents (
+  id uuid primary key default gen_random_uuid(),
+  student_id uuid not null references students(id) on delete cascade,
+  slug text not null,
+  connected_at timestamptz not null default now(),
+  first_activity_at timestamptz,
+  last_activity_at timestamptz,
+  unique (student_id, slug)
+);
+
+create index attribution_agents_student_id_idx on attribution_agents(student_id);
+
 -- One row per repository the plugin has seen on a student's machine. repo_key
 -- is the plugin's own hashed id for a checkout — stable across sessions, and
 -- deliberately not a filesystem path, so we never store where on their disk
@@ -231,6 +258,7 @@ create index attribution_verifications_repo_id_idx
   on attribution_verifications(repo_id);
 
 alter table attribution_keys enable row level security;
+alter table attribution_agents enable row level security;
 alter table attribution_repos enable row level security;
 alter table attribution_records enable row level security;
 alter table attribution_record_conflicts enable row level security;

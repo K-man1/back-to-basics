@@ -104,6 +104,81 @@ export async function getKeyInfo(
   return (data as { key_prefix: string; created_at: string; last_used_at: string | null } | null) ?? null;
 }
 
+export interface AttributionAgent {
+  slug: string;
+  connected_at: string;
+  first_activity_at: string | null;
+  last_activity_at: string | null;
+}
+
+// Records that a student set an app up on the website. Deliberately does NOT
+// touch the activity columns: this is a claim of intent, and overwriting a
+// real "it reported at 14:02" with "they clicked the button again at 16:30"
+// would turn evidence back into a claim.
+export async function markAgentConnected(
+  studentId: string,
+  slug: string,
+): Promise<void> {
+  const supabase = supabaseAdmin();
+  await supabase
+    .from("attribution_agents")
+    .upsert(
+      { student_id: studentId, slug },
+      { onConflict: "student_id,slug", ignoreDuplicates: true },
+    );
+}
+
+// Called from the record ingest path with the agent slugs a batch carried.
+// Creates the row if the student never picked this app on the site, so an app
+// that just starts working is visible rather than silently missing.
+export async function recordAgentActivity(
+  studentId: string,
+  slugs: string[],
+): Promise<void> {
+  if (!slugs.length) return;
+  const supabase = supabaseAdmin();
+  const now = new Date().toISOString();
+
+  await supabase.from("attribution_agents").upsert(
+    slugs.map((slug) => ({
+      student_id: studentId,
+      slug,
+      first_activity_at: now,
+      last_activity_at: now,
+    })),
+    { onConflict: "student_id,slug", ignoreDuplicates: true },
+  );
+
+  // The upsert above only fills these in for rows it created. Rows that already
+  // existed (the normal case -- the student set the app up on the site first)
+  // need them set explicitly, and first_activity_at only where it is still
+  // null, because "when did this first work" must not move.
+  await supabase
+    .from("attribution_agents")
+    .update({ first_activity_at: now })
+    .eq("student_id", studentId)
+    .in("slug", slugs)
+    .is("first_activity_at", null);
+
+  await supabase
+    .from("attribution_agents")
+    .update({ last_activity_at: now })
+    .eq("student_id", studentId)
+    .in("slug", slugs);
+}
+
+export async function listAgentsForStudent(
+  studentId: string,
+): Promise<AttributionAgent[]> {
+  const supabase = supabaseAdmin();
+  const { data } = await supabase
+    .from("attribution_agents")
+    .select("slug, connected_at, first_activity_at, last_activity_at")
+    .eq("student_id", studentId)
+    .order("connected_at", { ascending: true });
+  return (data as AttributionAgent[] | null) ?? [];
+}
+
 // Resolves a Bearer token to a student id, or null.
 //
 // The lookup is by hash, so the comparison Postgres does is already on a
@@ -437,6 +512,22 @@ export async function appendRecords(
         next_seq: typeof tailSeq === "number" ? tailSeq + 1 : 0,
         conflicts,
       };
+    }
+
+    // Every record body carries the agent that produced it (the plugin's
+    // hooks/_common.py emit()). This is the only place we learn that a
+    // student's setup actually works end to end, so it is worth the write.
+    const seen = new Set<string>();
+    for (const rec of accepted) {
+      const agent = rec.agent;
+      if (typeof agent === "string" && agent) seen.add(agent.slice(0, 64));
+    }
+    // Best-effort: a failure here must not fail a batch we already stored, or
+    // the client would retry records that are safely in the table.
+    try {
+      await recordAgentActivity(studentId, [...seen]);
+    } catch {
+      // status display only; nothing downstream depends on it
     }
   }
 

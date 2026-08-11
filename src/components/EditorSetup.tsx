@@ -1,17 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { EDITOR_TOOLS, buildSetupCommands } from "@/lib/editors";
+import { useState } from "react";
+import { EDITOR_TOOLS, buildSetupCommands, type EditorTool } from "@/lib/editors";
 
 // Select an AI app -> see its setup commands -> Continue.
 //
-// Key handling has one rule that matters: issuing a key REPLACES any key the
-// student already has (see issueKey in lib/attribution.ts), which would break
-// every other machine already configured with the old one. So a fresh key is
-// only ever auto-generated for a student who does not have one yet -- the
-// common first-run case, where there is nothing to break. A student who
-// already has one sees their prefix and an explicit button instead; rotating
-// has to be something they chose, not a side effect of browsing this page.
+// The whole design turns on one constraint: issuing a key REPLACES the
+// student's existing one (see issueKey in lib/attribution.ts), which breaks
+// every machine already using the old key. So the page never rotates a key on
+// its own for someone who has one.
+//
+// That leaves a question we genuinely cannot answer from the server -- is this
+// the computer they already set up, or a different one? Rather than explain the
+// ambiguity and make the student resolve it (what the old amber warning box
+// did, badly), the page picks the overwhelmingly common answer as the default:
+// a student with a key is adding another app to the machine they already set
+// up, which needs no key and no installer, just one command. The rarer case
+// gets a quiet link, and only that path shows a warning -- because only that
+// path can break anything.
 export default function EditorSetup({
   continueHref,
   hasExistingKey,
@@ -21,14 +27,14 @@ export default function EditorSetup({
   hasExistingKey: boolean;
   keyPrefix: string | null;
 }) {
-  const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
+  const [selected, setSelected] = useState<EditorTool | null>(null);
   const [noLogo, setNoLogo] = useState<Set<string>>(new Set());
   const [key, setKey] = useState<string | null>(null);
   const [keyBusy, setKeyBusy] = useState(false);
   const [keyError, setKeyError] = useState<string | null>(null);
-  // Derived per-render, not state: it never changes after mount, and setting
-  // it via an effect would be a setState call with no corresponding external
-  // event, which is the exact pattern react-hooks/set-state-in-effect flags.
+  const [showNewComputer, setShowNewComputer] = useState(false);
+  // Derived per-render, not state: it never changes after mount, and setting it
+  // from an effect is the exact pattern react-hooks/set-state-in-effect flags.
   const origin = typeof window !== "undefined" ? window.location.origin : "";
 
   async function generateKey() {
@@ -46,17 +52,25 @@ export default function EditorSetup({
     }
   }
 
-  // Auto-fire exactly once, and only for a student with nothing to lose.
-  // generateKey's first line sets state before its first await, which is
-  // real work happening in response to mount (fetching this student's key),
-  // not a synthesized render loop -- the pattern the lint rule exists to catch.
-  useEffect(() => {
-    if (!hasExistingKey && key === null && !keyBusy && !keyError) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      generateKey();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasExistingKey]);
+  // Everything that happens on selection happens here, in the event handler,
+  // rather than in an effect watching `selected` — same result, no effect to
+  // reason about, and no lint suppression.
+  async function selectTool(tool: EditorTool) {
+    setSelected(tool);
+    setShowNewComputer(false);
+
+    // Fire-and-forget: this only drives the Settings status list, so a failure
+    // must not interrupt setup.
+    fetch("/api/attribution/agents", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ slug: tool.slug }),
+    }).catch(() => {});
+
+    // First-ever setup: nothing exists to break, so skip the question entirely
+    // and just issue the key.
+    if (!hasExistingKey && key === null) await generateKey();
+  }
 
   function markNoLogo(slug: string) {
     setNoLogo((prev) => {
@@ -67,11 +81,12 @@ export default function EditorSetup({
     });
   }
 
-  const selected = EDITOR_TOOLS.find((t) => t.slug === selectedSlug) ?? null;
-
   if (selected) {
     const commands = origin ? buildSetupCommands(selected, { key, origin }) : [];
     const waitingOnKey = !hasExistingKey && !key && keyBusy;
+    // A student with a key who has not asked for a new computer is being shown
+    // the short "add this app to the machine you already set up" path.
+    const shortPath = hasExistingKey && !key;
 
     return (
       <div className="flex flex-col gap-6 text-sm">
@@ -91,36 +106,30 @@ export default function EditorSetup({
               />
             )}
           </span>
-          <p className="text-base font-semibold text-zinc-900">{selected.label}</p>
+          <div>
+            <p className="text-base font-semibold text-zinc-900">
+              {selected.label}
+            </p>
+            {selected.supported ? (
+              <p className="text-xs text-zinc-500">
+                {shortPath
+                  ? "Adding this to the computer you already set up."
+                  : "Run these in your terminal, in order."}
+              </p>
+            ) : null}
+          </div>
         </div>
 
-        {hasExistingKey && !key ? (
-          <div className="flex flex-col gap-2 rounded border border-zinc-200 bg-zinc-50 p-3 text-xs text-zinc-600">
-            <p>
-              You already have a key ({keyPrefix}…). If this is a machine you
-              have already configured, skip straight to the app-specific
-              command below. If this is a new machine, generate a new key —
-              doing so replaces the old one, so any other machine using it
-              will need to be reconfigured.
-            </p>
-            <button
-              type="button"
-              onClick={generateKey}
-              disabled={keyBusy}
-              className="w-fit rounded border border-zinc-900 px-3 py-1.5 text-xs text-zinc-900 transition-colors hover:bg-zinc-900 hover:text-white disabled:opacity-50"
-            >
-              {keyBusy ? "Generating…" : "Generate a new key"}
-            </button>
-          </div>
+        {keyError ? (
+          <p className="text-xs text-red-700">{keyError}</p>
         ) : null}
 
-        {keyError ? <p className="text-xs text-red-700">{keyError}</p> : null}
-
         {key ? (
-          <div className="rounded border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">
-            Copy the command below now — this key is shown once and cannot be
-            retrieved later.
-          </div>
+          <p className="rounded border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs text-zinc-600">
+            Your key is filled in below. It is shown once and cannot be looked
+            up later, so run these now — if you lose it, come back here and get
+            a new one.
+          </p>
         ) : null}
 
         {waitingOnKey ? (
@@ -128,9 +137,14 @@ export default function EditorSetup({
             Generating your key…
           </div>
         ) : commands.length ? (
-          <div className="flex flex-col gap-2">
-            {commands.map((cmd, i) => (
-              <Command key={i}>{cmd}</Command>
+          <div className="flex flex-col gap-4">
+            {commands.map((c, i) => (
+              <div key={i} className="flex flex-col gap-1">
+                <Command>{c.cmd}</Command>
+                {c.hint ? (
+                  <p className="text-xs text-zinc-500">{c.hint}</p>
+                ) : null}
+              </div>
             ))}
           </div>
         ) : (
@@ -141,6 +155,37 @@ export default function EditorSetup({
 
         {selected.note && commands.length ? (
           <p className="text-xs text-zinc-500">{selected.note}</p>
+        ) : null}
+
+        {shortPath ? (
+          <div className="text-xs">
+            {showNewComputer ? (
+              <div className="flex flex-col gap-2 rounded border border-zinc-200 p-3">
+                <p className="text-zinc-600">
+                  A new key replaces your current one ({keyPrefix}…). Any other
+                  computer still using the old key stops reporting until you set
+                  it up again. Only do this if you are setting up a computer you
+                  have not used before.
+                </p>
+                <button
+                  type="button"
+                  onClick={generateKey}
+                  disabled={keyBusy}
+                  className="w-fit rounded border border-zinc-900 px-3 py-1.5 text-zinc-900 transition-colors hover:bg-zinc-900 hover:text-white disabled:opacity-50"
+                >
+                  {keyBusy ? "Generating…" : "Get a new key"}
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setShowNewComputer(true)}
+                className="text-zinc-500 underline hover:text-zinc-900"
+              >
+                Setting this up on a different computer?
+              </button>
+            )}
+          </div>
         ) : null}
 
         <div className="flex items-center gap-4">
@@ -154,7 +199,7 @@ export default function EditorSetup({
 
         <button
           type="button"
-          onClick={() => setSelectedSlug(null)}
+          onClick={() => setSelected(null)}
           className="w-fit text-xs text-zinc-500 underline hover:text-zinc-900"
         >
           Use a different app? Click here
@@ -169,7 +214,7 @@ export default function EditorSetup({
         <button
           key={t.slug}
           type="button"
-          onClick={() => setSelectedSlug(t.slug)}
+          onClick={() => selectTool(t)}
           className="flex flex-col items-center gap-3 rounded-xl border border-zinc-300 px-3 py-4 text-center transition-colors hover:border-zinc-900"
         >
           <span className="flex h-10 w-10 items-center justify-center">
