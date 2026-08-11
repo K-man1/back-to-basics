@@ -40,3 +40,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Written by ai-attribution < 0.6.0, which committed a ledger into the repo.
+# The current plugin keeps all state outside the working tree.
+.aiattr/
