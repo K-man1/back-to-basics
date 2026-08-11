@@ -56,6 +56,21 @@ export default async function OnboardingPage({
         Two things to set up, one habit to build.
       </h1>
 
+      <section className="mt-8">
+        <p className="text-sm font-semibold text-zinc-900">
+          Set up your AI app
+        </p>
+        <p className="mt-1 text-sm text-zinc-600">
+          Tell us which AI coding app you build with and grab its setup steps.
+        </p>
+        <a
+          href="/editors?next=/onboarding"
+          className="mt-3 inline-block w-fit rounded border border-zinc-900 px-4 py-2 text-sm text-zinc-900 transition-colors hover:bg-zinc-900 hover:text-white"
+        >
+          Select your AI app
+        </a>
+      </section>
+
       <div className="mt-8 flex flex-col gap-6 text-sm">
         <div className="rounded border border-zinc-200 p-4">
           <p className="font-semibold text-zinc-900">

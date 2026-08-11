@@ -1,8 +1,6 @@
 import { auth, signOut } from "@/auth";
 import { getOrCreateStudent } from "@/lib/students";
 import { getHackatimeStatsForStudent } from "@/lib/hackatime";
-import { getKeyInfo, listReposByStudent } from "@/lib/attribution";
-import AttributionInstall from "@/components/AttributionInstall";
 import ThemeToggle from "@/components/ThemeToggle";
 
 export default async function SettingsPage() {
@@ -16,11 +14,7 @@ export default async function SettingsPage() {
     session.user.email ?? null,
   );
 
-  const [hackatimeStats, attributionKey, attributionRepos] = await Promise.all([
-    getHackatimeStatsForStudent(student),
-    getKeyInfo(student.id),
-    listReposByStudent(student.id),
-  ]);
+  const hackatimeStats = await getHackatimeStatsForStudent(student);
 
   return (
     <div className="flex flex-col gap-8">
@@ -49,25 +43,16 @@ export default async function SettingsPage() {
       </div>
 
       <div className="rounded border border-zinc-200 p-4 text-sm">
-        <p className="font-semibold text-zinc-900">Code authorship</p>
-        <div className="mt-1">
-          <AttributionInstall
-            installed={!!attributionKey}
-            keyPrefix={attributionKey?.key_prefix ?? null}
-            lastUsedAt={attributionKey?.last_used_at ?? null}
-          />
-        </div>
-        {attributionRepos.length > 0 ? (
-          <p className="mt-3 text-xs text-zinc-500">
-            Tracking {attributionRepos.length}{" "}
-            {attributionRepos.length === 1 ? "repository" : "repositories"}:{" "}
-            {attributionRepos
-              .slice(0, 6)
-              .map((r) => r.name)
-              .join(", ")}
-            {attributionRepos.length > 6 ? ", …" : ""}
-          </p>
-        ) : null}
+        <p className="font-semibold text-zinc-900">AI app setup</p>
+        <p className="mt-1 text-zinc-600">
+          Set up a new AI coding app, or grab the setup steps again.
+        </p>
+        <a
+          href="/editors?next=/dashboard/settings"
+          className="mt-2 inline-block w-fit rounded border border-zinc-900 px-3 py-1.5 text-xs text-zinc-900 transition-colors hover:bg-zinc-900 hover:text-white"
+        >
+          Set up an AI app
+        </a>
       </div>
 
       <div className="rounded border border-zinc-200 p-4 text-sm">
