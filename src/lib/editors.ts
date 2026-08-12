@@ -50,9 +50,11 @@ export const EDITOR_TOOLS: EditorTool[] = [
   { label: "Codex", slug: "codex", logo: "codex.png", supported: true, install: "standalone" },
   { label: "Gemini CLI", slug: "gemini-cli", logo: "gemini-cli.png", supported: true, install: "standalone" },
   {
-    label: "OpenCode", slug: "opencode", logo: "opencode.png", supported: false, install: "standalone",
-    note: "opencode's hooks are real TypeScript plugin code, not a config file "
-      + "we can generate. Not supported yet.",
+    label: "OpenCode", slug: "opencode", logo: "opencode.png", supported: true, install: "standalone",
+    note: "Restart opencode when this finishes. It has no hook config file — "
+      + "this installs a plugin into ~/.config/opencode/plugins/ instead, and "
+      + "opencode only loads plugins at startup, so nothing is recorded until "
+      + "you restart it.",
   },
   { label: "Goose", slug: "goose", logo: "goose.png", supported: true, install: "standalone" },
   { label: "Qwen Code", slug: "qwen-code", logo: "qwen.png", supported: true, install: "standalone" },
