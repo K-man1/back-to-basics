@@ -114,10 +114,6 @@ export default function AttributionRepoPicker({
           Show all ({hiddenCount} more)
         </button>
       ) : null}
-      <p className="text-xs text-zinc-500">
-        Reported by the plugin on your own machine. Reviewers see these as
-        self-reported until the repository is verified from GitHub.
-      </p>
     </div>
   );
 }

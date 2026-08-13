@@ -26,6 +26,7 @@ export function missingSubmitRequirements(
     description: string | null;
     github_url: string | null;
     demo_url: string | null;
+    attribution_repo_keys: string[];
   },
   journalEntryCount: number,
 ): string[] {
@@ -33,6 +34,10 @@ export function missingSubmitRequirements(
   if (!project.description?.trim()) missing.push("description");
   if (!project.github_url?.trim()) missing.push("GitHub URL");
   if (!project.demo_url?.trim()) missing.push("demo URL");
+  // A reviewer grading Proof needs to know what the agent wrote, so a project
+  // has to say which repositories it was built in before it can be submitted.
+  // Selecting none is not the same as "no AI" — it's an unanswered question.
+  if (!project.attribution_repo_keys?.length) missing.push("AI usage");
   if (journalEntryCount === 0) missing.push("journal entry");
   return missing;
 }

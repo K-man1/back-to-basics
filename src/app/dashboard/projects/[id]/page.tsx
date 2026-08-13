@@ -320,7 +320,7 @@ export default async function ProjectDetailPage({
       {linkedAttribution.band === "unknown" ? (
         <p className="-mt-6 text-xs text-zinc-500">
           {linkedRepos.length === 0
-            ? "Link a code repository below to see how much of this project an agent wrote."
+            ? "Pick the repositories this project was built in, under Edit project. Required before you submit."
             : `Only ${linkedAttribution.observedPercent}% of this project was tracked, which is too little to say. Code written before the plugin was installed is not counted either way.`}
         </p>
       ) : null}

@@ -76,7 +76,9 @@ export default function ProjectFormFields({
       </div>
 
       <div className="flex flex-col gap-1">
-        <p>Code repositories</p>
+        {/* Like the description: fine to leave empty while drafting, checked
+            by missingSubmitRequirements when you submit. */}
+        <p>AI Usage (required to submit)</p>
         <AttributionRepoPicker
           repos={attributionRepos}
           initialSelected={project?.attribution_repo_keys ?? []}

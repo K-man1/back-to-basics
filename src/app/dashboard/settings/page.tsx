@@ -3,6 +3,7 @@ import { getOrCreateStudent } from "@/lib/students";
 import { getHackatimeStatsForStudent } from "@/lib/hackatime";
 import { listAgentsForStudent } from "@/lib/attribution";
 import { EDITOR_TOOLS } from "@/lib/editors";
+import RelativeTime from "@/components/RelativeTime";
 import ThemeToggle from "@/components/ThemeToggle";
 
 export default async function SettingsPage() {
@@ -75,7 +76,7 @@ export default async function SettingsPage() {
                   {working && agent.last_activity_at ? (
                     <span className="text-xs text-zinc-500">
                       last reported{" "}
-                      {new Date(agent.last_activity_at).toLocaleString()}
+                      <RelativeTime iso={agent.last_activity_at} />
                     </span>
                   ) : (
                     <span className="text-xs text-zinc-500">
