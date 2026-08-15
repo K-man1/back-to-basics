@@ -4,7 +4,12 @@ import { auth } from "@/auth";
 import { getOrCreateStudent } from "@/lib/students";
 import { getProjectById, missingSubmitRequirements } from "@/lib/projects";
 import { getHackatimeStatsForStudent } from "@/lib/hackatime";
-import { getKeyInfo, listReposByStudent, summarise } from "@/lib/attribution";
+import {
+  getKeyInfo,
+  listReposByStudent,
+  summarise,
+  toRepoChoices,
+} from "@/lib/attribution";
 import {
   getEntriesForProject,
   gradedLevels,
@@ -286,7 +291,7 @@ export default async function ProjectDetailPage({
         project={project}
         hackatimeProjects={hackatimeStats?.projects ?? []}
         hackatimeConnected={!!student.hackatime_access_token}
-        attributionRepos={attributionRepos}
+        attributionRepos={toRepoChoices(attributionRepos)}
         attributionInstalled={!!attributionKey}
         updateAction={updateProjectAction.bind(null, project.id)}
         deleteAction={deleteProjectAction.bind(null, project.id)}

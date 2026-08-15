@@ -1,6 +1,6 @@
 import AttributionRepoPicker from "@/components/AttributionRepoPicker";
 import HackatimeProjectPicker from "@/components/HackatimeProjectPicker";
-import type { AttributionRepo } from "@/lib/attribution";
+import type { AttributionRepoChoice } from "@/lib/attribution";
 import type { HackatimeProjectStat } from "@/lib/hackatime";
 import type { Project } from "@/lib/projects";
 
@@ -22,7 +22,7 @@ export default function ProjectFormFields({
   >;
   hackatimeProjects: HackatimeProjectStat[];
   hackatimeConnected?: boolean;
-  attributionRepos?: AttributionRepo[];
+  attributionRepos?: AttributionRepoChoice[];
   attributionInstalled?: boolean;
 }) {
   return (

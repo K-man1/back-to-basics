@@ -1,35 +1,42 @@
 "use client";
 
 import { useState } from "react";
-import type { AttributionRepo } from "@/lib/attribution";
-import { summarise } from "@/lib/attribution";
+import type { AttributionRepoChoice } from "@/lib/attribution";
 
 // Which tracked repos count toward this project. Same shape and interaction as
 // HackatimeProjectPicker — the student selects from what was already observed
-// rather than typing anything — but showing the AI/you split instead of hours.
+// rather than typing anything — but showing the AI band instead of hours.
 
 const INITIAL_VISIBLE = 12;
 
-// The student sees a band, not a percentage. Exact figures are a reviewer's
+// The student sees a band, never a percentage. Exact figures are a reviewer's
 // tool: a number on a chip invites optimising against it, and it is the least
 // reliable reading of the three since it says nothing about coverage.
 //
-// `total === 0` means no roll-up has arrived yet, which is NOT the same as a
-// project with no AI in it. Saying "0% AI" for it was a real bug: a student who
-// built a whole site with an agent and had not closed their session saw
-// "0% AI" and reasonably concluded the tool was broken.
-function split(repo: AttributionRepo) {
-  const summary = summarise([repo]);
-  return {
-    total: summary.total,
-    band: summary.band,
-    label: summary.bandLabel,
-    detail:
-      summary.total === 0
-        ? "Nothing reported yet for this repository"
-        : `${repo.ai_sig} AI / ${repo.human_sig} you / ${repo.unobserved_sig} unobserved ` +
-          `(significant lines; ${summary.observedPercent}% of it was tracked)`,
-  };
+// This component is deliberately given no way to disobey that. It receives
+// AttributionRepoChoice, which carries no line counts at all, so there is
+// nothing here to leak through the markup or through the serialised props. The
+// earlier version took whole repo rows and hid the counts in a `title`
+// attribute, which stopped nobody — the numbers were in the page payload, and
+// the tooltip printed them outright.
+//
+// `reported === false` means no roll-up has arrived yet, which is NOT the same
+// as a project with no AI in it. Saying "0% AI" for it was a real bug: a
+// student who built a whole site with an agent and had not closed their session
+// saw "0% AI" and reasonably concluded the tool was broken.
+function tooltip(repo: AttributionRepoChoice) {
+  if (!repo.reported) return "Nothing reported yet for this repository";
+  if (repo.band === "unknown") {
+    return (
+      `Only ${repo.observedPercent}% of this repository was tracked, ` +
+      "which is too little to characterise. Usually means the plugin was " +
+      "installed after the work started."
+    );
+  }
+  return (
+    `AI: ${repo.bandLabel}, based on the ${repo.observedPercent}% of this ` +
+    "repository the plugin watched being written."
+  );
 }
 
 export default function AttributionRepoPicker({
@@ -37,7 +44,7 @@ export default function AttributionRepoPicker({
   initialSelected,
   installed = false,
 }: {
-  repos: AttributionRepo[];
+  repos: AttributionRepoChoice[];
   initialSelected: string[];
   installed?: boolean;
 }) {
@@ -80,11 +87,10 @@ export default function AttributionRepoPicker({
       <div className="flex flex-wrap gap-2">
         {visible.map((repo) => {
           const isSelected = selected.has(repo.repo_key);
-          const { band, label, detail } = split(repo);
           return (
             <label
               key={repo.repo_key}
-              title={detail}
+              title={tooltip(repo)}
               className={`cursor-pointer rounded border px-3 py-1.5 text-xs transition-colors ${
                 isSelected
                   ? "border-zinc-900 bg-zinc-900 text-white"
@@ -100,7 +106,7 @@ export default function AttributionRepoPicker({
                 className="sr-only"
               />
               {repo.name}
-              {band === "unknown" ? "" : ` — AI: ${label}`}
+              {repo.band === "unknown" ? "" : ` — AI: ${repo.bandLabel}`}
             </label>
           );
         })}

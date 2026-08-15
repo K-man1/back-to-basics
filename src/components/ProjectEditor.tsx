@@ -6,7 +6,7 @@ import ConfirmButton from "@/components/ConfirmButton";
 import type { Project } from "@/lib/projects";
 import { normalizeExternalUrl } from "@/lib/url";
 import type { HackatimeProjectStat } from "@/lib/hackatime";
-import type { AttributionRepo } from "@/lib/attribution";
+import type { AttributionRepoChoice } from "@/lib/attribution";
 
 export default function ProjectEditor({
   project,
@@ -20,7 +20,7 @@ export default function ProjectEditor({
   project: Project;
   hackatimeProjects: HackatimeProjectStat[];
   hackatimeConnected?: boolean;
-  attributionRepos?: AttributionRepo[];
+  attributionRepos?: AttributionRepoChoice[];
   attributionInstalled?: boolean;
   updateAction: (formData: FormData) => Promise<void>;
   deleteAction: () => Promise<void>;

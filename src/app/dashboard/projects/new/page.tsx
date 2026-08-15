@@ -1,7 +1,7 @@
 import { auth } from "@/auth";
 import { getOrCreateStudent } from "@/lib/students";
 import { getHackatimeStatsForStudent } from "@/lib/hackatime";
-import { getKeyInfo, listReposByStudent } from "@/lib/attribution";
+import { getKeyInfo, listReposByStudent, toRepoChoices } from "@/lib/attribution";
 import { createProjectAction } from "@/app/dashboard/actions";
 import ProjectFormFields from "@/components/ProjectFormFields";
 
@@ -35,7 +35,7 @@ export default async function NewProjectPage() {
         <ProjectFormFields
           hackatimeProjects={hackatimeStats?.projects ?? []}
           hackatimeConnected={!!student.hackatime_access_token}
-          attributionRepos={attributionRepos}
+          attributionRepos={toRepoChoices(attributionRepos)}
           attributionInstalled={!!attributionKey}
         />
         <button

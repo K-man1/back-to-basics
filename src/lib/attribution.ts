@@ -803,3 +803,45 @@ export function summarise(repos: AttributionRepo[]): AttributionSummary {
     lastActivity: lastActivity ?? null,
   };
 }
+
+// What the repo picker is allowed to know.
+//
+// The picker is a client component, so every field on the objects handed to it
+// is serialised into the page payload and readable with Inspect Element no
+// matter what the markup chooses to display. Narrowing the props is therefore
+// the only thing that actually keeps the ratio away from a student; rewording
+// the tooltip alone left `ai_sig` and `human_sig` sitting in the HTML, one
+// division apart from the number the band exists to replace.
+//
+// Bands are decided here, on the server, and only the name of the band travels.
+export interface AttributionRepoChoice {
+  repo_key: string;
+  name: string;
+  last_activity: string | null;
+  band: BandLevel;
+  bandLabel: string;
+  // Safe to send, and worth showing. Coverage says how much of the repository
+  // the plugin watched, never who wrote it, so it qualifies the band without
+  // reconstituting the percentage behind it.
+  observedPercent: number;
+  // Distinguishes "no roll-up has arrived" from "a roll-up arrived and found
+  // nothing", which look identical at zero and mean opposite things.
+  reported: boolean;
+}
+
+export function toRepoChoices(
+  repos: AttributionRepo[],
+): AttributionRepoChoice[] {
+  return repos.map((repo) => {
+    const summary = summarise([repo]);
+    return {
+      repo_key: repo.repo_key,
+      name: repo.name,
+      last_activity: repo.last_activity,
+      band: summary.band,
+      bandLabel: summary.bandLabel,
+      observedPercent: summary.observedPercent,
+      reported: summary.total > 0,
+    };
+  });
+}
