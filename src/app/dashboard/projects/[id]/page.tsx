@@ -4,10 +4,10 @@ import { auth } from "@/auth";
 import { getOrCreateStudent } from "@/lib/students";
 import { getProjectById, missingSubmitRequirements } from "@/lib/projects";
 import { getHackatimeStatsForStudent } from "@/lib/hackatime";
+import { getAiTelemetryForStudent } from "@/lib/hackatime-ai";
 import {
   getKeyInfo,
   listReposByStudent,
-  summarise,
   toRepoChoices,
 } from "@/lib/attribution";
 import {
@@ -187,13 +187,15 @@ export default async function ProjectDetailPage({
     .filter((p) => project.hackatime_project_names.includes(p.name))
     .reduce((sum, p) => sum + p.total_seconds, 0);
 
-  // Only the repos this project actually selected, the same way linkedSeconds
-  // narrows Hackatime projects. Summing every repo the student has ever opened
-  // would describe their whole machine rather than this project.
-  const linkedRepos = attributionRepos.filter((r) =>
-    project.attribution_repo_keys.includes(r.repo_key),
+  // What the agent wrote in this project, per Hackatime. Scoped by the same
+  // linked project names as linkedSeconds, so the two tiles below describe the
+  // same work. `attributionRepos` is still read above, but only to drive the
+  // repo picker and the "plugin installed" hint in the editor — no number on
+  // this page comes from it any more.
+  const aiTelemetry = await getAiTelemetryForStudent(
+    student,
+    project.hackatime_project_names,
   );
-  const linkedAttribution = summarise(linkedRepos);
 
   // Ungraded entries are worth nothing until the review pass, so pre-review
   // this sits at zero — `best` shows what the entries already written can
@@ -292,7 +294,11 @@ export default async function ProjectDetailPage({
         hackatimeProjects={hackatimeStats?.projects ?? []}
         hackatimeConnected={!!student.hackatime_access_token}
         attributionRepos={toRepoChoices(attributionRepos)}
-        attributionInstalled={!!attributionKey}
+        // A key that was issued but never used means the install was never
+        // finished, so "Plugin installed, no repositories yet" would be a
+        // guess we have no basis for -- and it points the student at waiting
+        // when what they need is to go back and connect the machine.
+        attributionInstalled={attributionKey?.last_used_at != null}
         updateAction={updateProjectAction.bind(null, project.id)}
         deleteAction={deleteProjectAction.bind(null, project.id)}
       />
@@ -308,25 +314,23 @@ export default async function ProjectDetailPage({
           <p className="text-2xl text-zinc-900">{entries.length}</p>
           <p className="mt-1 text-zinc-500">Journal Entries</p>
         </div>
-        {/* The band, not a percentage. A number here would invite optimising
-            against it, and on its own it hides how much of the project was
-            actually tracked. Reviewers get the exact figure on the review page.
-            An em dash covers both "no repositories linked" and "too little
-            tracked to say" — neither is a finding, and neither is 0%. */}
+        {/* A line count, not a band and not a percentage. The band existed to
+            avoid publishing a ratio students would optimise against; that
+            concern is moot here because Hackatime exposes no human line count
+            to build a ratio out of in the first place. An em dash is "nothing
+            recorded", which is not the same as zero. */}
         <div className="p-4">
           <p className="text-2xl text-zinc-900">
-            {linkedAttribution.band === "unknown"
-              ? "—"
-              : linkedAttribution.bandLabel}
+            {aiTelemetry ? aiTelemetry.aiLines.toLocaleString() : "—"}
           </p>
-          <p className="mt-1 text-zinc-500">AI Usage</p>
+          <p className="mt-1 text-zinc-500">AI Lines</p>
         </div>
       </div>
-      {linkedAttribution.band === "unknown" ? (
+      {aiTelemetry === null ? (
         <p className="-mt-6 text-xs text-zinc-500">
-          {linkedRepos.length === 0
-            ? "Pick the repositories this project was built in, under Edit project. Required before you submit."
-            : `Only ${linkedAttribution.observedPercent}% of this project was tracked, which is too little to say. Code written before the plugin was installed is not counted either way.`}
+          {project.hackatime_project_names.length === 0
+            ? "Link this project to a Hackatime project under Edit project, and AI usage will appear here."
+            : "Nothing recorded yet. Hackatime counts agent edits from your editor's own AI tracking — it can take a few minutes to appear."}
         </p>
       ) : null}
 

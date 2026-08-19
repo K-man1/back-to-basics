@@ -273,3 +273,70 @@ values (
   array['image/png', 'image/jpeg', 'image/gif', 'image/webp']
 )
 on conflict (id) do nothing;
+
+-- Hackatime's own AI line attribution, cached.
+--
+-- WHY A CACHE AND NOT A LIVE CALL. The numbers live on individual heartbeat
+-- rows, and the only Hackatime endpoint that returns those columns is
+-- /api/v1/my/heartbeats, which takes a time window and nothing else: no
+-- project filter, no row cap, no aggregation. Answering "how many lines did an
+-- agent write in this project" therefore means pulling every heartbeat in the
+-- window and bucketing them here. That is far too heavy to repeat on every
+-- page render, so it runs on a watermark and the pages read these rows.
+--
+-- WHY NOT THE AGGREGATE ENDPOINT, which would need no cache at all: their
+-- /summaries response reports AI lines only inside `ai_model_breakdown`, and
+-- WakatimeService#daily_activity builds that with `if row["ai_model"].present?`.
+-- vscode-hackatime never sets ai_model -- it sends ai_line_changes and
+-- human_line_changes off a local editor heuristic and nothing else -- so every
+-- VS Code student's AI lines are silently dropped from that response. Using it
+-- would have reported zero AI usage for exactly the people we most need it for.
+create table hackatime_ai_days (
+  student_id uuid not null references students(id) on delete cascade,
+  -- UTC, not the student's Hackatime timezone, which we have no cheap way to
+  -- read. Only affects which day a late-night edit lands on; project totals
+  -- sum the same either way.
+  local_date date not null,
+  -- Heartbeats with a null project are Hackatime's "Other" bucket. Kept rather
+  -- than dropped so a total here can be reconciled against their dashboard.
+  project text not null,
+  -- Summed verbatim from the column, INCLUDING negatives. hackatime-cli writes
+  -- a signed `newLines - oldLines` from the agent's transcript patches, while
+  -- vscode-hackatime writes a doc.lineCount delta bucketed by a paste-size
+  -- heuristic. Hackatime adds those two together in one column and so do we;
+  -- there is no way to separate them after the fact. Read it as net lines
+  -- changed, not lines authored.
+  ai_lines integer not null default 0,
+  -- Only vscode-hackatime produces this, and only when it detected a genuine
+  -- single-character keystroke in the file during the interval -- otherwise the
+  -- extension zeroes it before sending. A zero here is therefore not evidence
+  -- the student wrote nothing.
+  human_lines integer not null default 0,
+  ai_input_tokens bigint not null default 0,
+  ai_output_tokens bigint not null default 0,
+  -- {model_name: lines}. Only populated for producers that set ai_model, which
+  -- in practice means transcript-derived rows. Its total is deliberately NOT
+  -- ai_lines above, and must never be presented as a full breakdown.
+  models jsonb not null default '{}'::jsonb,
+  heartbeats integer not null default 0,
+  synced_at timestamptz not null default now(),
+  primary key (student_id, local_date, project)
+);
+
+create index hackatime_ai_days_student_project_idx
+  on hackatime_ai_days(student_id, project);
+
+-- One watermark per student, same discipline as the plugin's outbox: it only
+-- advances over a window that was fetched successfully, so an interrupted sync
+-- refetches rather than leaving a hole. Days are recomputed and upserted whole,
+-- so refetching is free and duplicate work is invisible.
+create table hackatime_ai_sync (
+  student_id uuid primary key references students(id) on delete cascade,
+  synced_through timestamptz,
+  last_attempt timestamptz,
+  last_success timestamptz,
+  failures integer not null default 0
+);
+
+alter table hackatime_ai_days enable row level security;
+alter table hackatime_ai_sync enable row level security;

@@ -24,6 +24,21 @@ export interface HackatimeStats {
   // used could not report it. See the note below: this is not the same number
   // as totalSeconds and choosing between them is a policy decision.
   humanSeconds: number | null;
+  // The same per-project breakdown as `projects`, with `ai coding` excluded.
+  // Empty when the call could not be made (the public-stats fallback path).
+  //
+  // This exists because `projects` alone could not answer the question the
+  // coin math asks. `humanSeconds` is account-wide, so a project's linked
+  // seconds were only ever available *including* agent time, and
+  // awardedCoins() was therefore paying for it. Hackatime's own mechanism for
+  // not paying out on agent edits is this flag, and it only works if somebody
+  // passes it.
+  //
+  // Their caveat, inherited and worth repeating: the exclusion is a SQL
+  // `where.not`, so heartbeats with no category at all -- legacy rows written
+  // before categories existed -- are dropped alongside the AI ones. On an old
+  // account this figure can therefore be lower than the true human time.
+  projectsExcludingAi: HackatimeProjectStat[];
 }
 
 // Hours with AI-assisted coding excluded.
@@ -67,12 +82,17 @@ export async function getAuthenticatedHackatimeStats(
   const today = new Date().toISOString().slice(0, 10);
   const window = `start_date=${VERY_EARLY_DATE}&end_date=${today}`;
 
-  // Two calls to the same endpoint rather than one: the flag changes the
+  // Three calls to the same endpoint rather than one: the flag changes the
   // totals, and the program needs to be able to show both without a second
-  // round trip when someone asks why the numbers differ.
-  const [allRes, humanRes] = await Promise.all([
+  // round trip when someone asks why the numbers differ. The third is the
+  // per-project version of the second -- see `projectsExcludingAi` above for
+  // why an account-wide figure was not enough.
+  const [allRes, humanRes, humanProjectsRes] = await Promise.all([
     fetch(`${STATS_URL}?${window}&features=projects`, { headers }),
     fetch(`${STATS_URL}?${window}&total_seconds=true&no_ai_coding=true`, {
+      headers,
+    }),
+    fetch(`${STATS_URL}?${window}&features=projects&no_ai_coding=true`, {
       headers,
     }),
   ]);
@@ -92,10 +112,20 @@ export async function getAuthenticatedHackatimeStats(
     if (typeof seconds === "number") humanSeconds = seconds;
   }
 
+  // Same discipline as humanSeconds: an empty list when the call failed, never
+  // a fallback to the AI-inclusive breakdown. Callers must be able to tell
+  // "no agent time here" apart from "we could not ask".
+  let projectsExcludingAi: HackatimeProjectStat[] = [];
+  if (humanProjectsRes.ok) {
+    const p = await humanProjectsRes.json().catch(() => null);
+    projectsExcludingAi = parseProjects(p?.data?.projects);
+  }
+
   return {
     totalSeconds: data.total_seconds,
     projects: parseProjects(data.projects),
     humanSeconds,
+    projectsExcludingAi,
   };
 }
 
@@ -119,6 +149,7 @@ export async function getPublicHackatimeStats(
     totalSeconds: data.total_seconds,
     projects: parseProjects(data.projects),
     humanSeconds: null,
+    projectsExcludingAi: [],
   };
 }
 

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import GridBackground from "@/components/GridBackground";
 import ScrambleText from "@/components/ScrambleText";
@@ -86,8 +87,14 @@ export default async function Home() {
             Build real projects, journal what you learn, and get rewarded for
             understanding your code — not just shipping it.
           </p>
-          <div className="mt-8">
+          <div className="mt-8 flex flex-wrap items-center gap-3">
             <SignInButton label="Sign in with Hack Club →" />
+            <Link
+              href="/docs"
+              className="w-fit rounded border border-zinc-300 px-4 py-2 text-sm text-zinc-900 transition-colors hover:border-zinc-900"
+            >
+              Read the docs
+            </Link>
           </div>
         </section>
 
@@ -148,6 +155,18 @@ export default async function Home() {
             coders.
           </p>
           <div className="flex gap-4">
+            <Link
+              href="/docs"
+              className="underline-offset-2 hover:text-zinc-900 hover:underline"
+            >
+              Docs
+            </Link>
+            <Link
+              href="/rubric"
+              className="underline-offset-2 hover:text-zinc-900 hover:underline"
+            >
+              Rubric
+            </Link>
             <a
               href="https://hackclub.com"
               className="underline-offset-2 hover:text-zinc-900 hover:underline"

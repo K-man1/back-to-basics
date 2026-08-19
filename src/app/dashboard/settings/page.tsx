@@ -1,7 +1,7 @@
 import { auth, signOut } from "@/auth";
 import { getOrCreateStudent } from "@/lib/students";
 import { getHackatimeStatsForStudent } from "@/lib/hackatime";
-import { listAgentsForStudent } from "@/lib/attribution";
+import { getKeyInfo, listAgentsForStudent } from "@/lib/attribution";
 import { EDITOR_TOOLS } from "@/lib/editors";
 import RelativeTime from "@/components/RelativeTime";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -19,6 +19,11 @@ export default async function SettingsPage() {
 
   const hackatimeStats = await getHackatimeStatsForStudent(student);
   const agents = await listAgentsForStudent(student.id);
+  // Whether any computer has ever authenticated with this student's key. The
+  // agent rows above cannot answer this: they are written when an app is picked
+  // on this page, which is a claim about intent, not about a machine.
+  const keyInfo = await getKeyInfo(student.id);
+  const keyEverUsed = keyInfo?.last_used_at != null;
 
   return (
     <div className="flex flex-col gap-8">
@@ -98,6 +103,24 @@ export default async function SettingsPage() {
           &ldquo;Connected and working&rdquo; means we have actually received
           code from it — that is the one that counts.
         </p>
+
+        {/*
+          The specific, actionable version of "connected but not working". An
+          app can be stuck there for several reasons, but exactly one of them is
+          visible from here: no computer has ever authenticated with this
+          student's key, so the connect step was never run anywhere. Anything
+          else (a machine that is set up but idle, a repo opted out) leaves
+          last_used_at set, so this note stays off.
+        */}
+        {agents.length && !keyEverUsed ? (
+          <p className="mt-3 rounded border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">
+            No computer has connected to your account yet. Picking an app above
+            only records which app you use — the plugin also has to be given
+            your key, on the computer you build on, or it records your work
+            locally and never sends it. Use the button below and run every
+            command it shows you.
+          </p>
+        ) : null}
 
         <a
           href="/editors?next=/dashboard/settings"

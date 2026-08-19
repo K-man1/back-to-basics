@@ -128,7 +128,21 @@ export function buildSetupCommands(
         hint: "Connects it to your account. Restart Claude Code afterwards.",
       });
     } else {
+      // The short path, and the only one of the two that can be silently wrong.
+      // Every other short path ends in `install-hooks`, which fails loudly on a
+      // machine that never ran the installer. These two commands succeed just
+      // fine on a machine with no key on disk, and the plugin they install then
+      // tracks locally and sends nothing, forever, without complaining once.
+      // `status` is the only thing on this path that can tell the two apart, so
+      // it is a step rather than a suggestion.
       commands[commands.length - 1].hint = "Restart Claude Code afterwards.";
+      commands.push({
+        cmd: `${CLAUDE_PLUGIN_CLI} status`,
+        hint:
+          "Checks this computer is connected. It must say `reporting: on` — "
+          + "if it says off, this is a computer you have not set up before, so "
+          + "use the link below.",
+      });
     }
     return commands;
   }

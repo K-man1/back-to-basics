@@ -65,7 +65,13 @@ export default async function EditorsPage({
       <div className="mt-8">
         <EditorSetup
           continueHref={continueHref}
-          hasExistingKey={keyInfo !== null}
+          // Not `keyInfo !== null`. A key that exists but has never been used
+          // is a key nobody ever finished installing, and treating it as a
+          // working machine is what let a student walk away with an install
+          // that could not report. last_used_at is written by studentIdForKey,
+          // so it is non-null if and only if some machine has successfully
+          // authenticated with this key at least once.
+          keyEverUsed={keyInfo?.last_used_at != null}
           keyPrefix={keyInfo?.key_prefix ?? null}
         />
       </div>

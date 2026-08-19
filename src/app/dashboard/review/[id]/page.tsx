@@ -9,8 +9,8 @@ import { getReviewsForProject } from "@/lib/reviews";
 import { getProjectById } from "@/lib/projects";
 import { normalizeExternalUrl } from "@/lib/url";
 import { getHackatimeStatsForStudent } from "@/lib/hackatime";
-import { latestVerifications, listReposByKeys } from "@/lib/attribution";
-import AttributionSummary from "@/components/AttributionSummary";
+import { getAiTelemetryForStudent } from "@/lib/hackatime-ai";
+import HackatimeAiSummary from "@/components/HackatimeAiSummary";
 import { getEntriesForProject, gradedLevels, axisScores } from "@/lib/journal";
 import { AXES, LEVEL_MAX, levelLabel } from "@/lib/rubric";
 import RubricTable from "@/components/RubricTable";
@@ -52,16 +52,6 @@ export default async function ReviewDetailPage({
 
   const journalEntries = await getEntriesForProject(project.id);
 
-  // Scoped to the project owner, so a reviewer only ever sees the repos that
-  // student linked to this project — never their whole tracked list.
-  const attributionRepos = await listReposByKeys(
-    project.student_id,
-    project.attribution_repo_keys,
-  );
-  const attributionVerifications = await latestVerifications(
-    attributionRepos.map((r) => r.id),
-  );
-
   // Expand GitHub permalinks with a line anchor into inline snippets so
   // grading doesn't require tab-hopping. Fetched per unique link; anything
   // unparseable or unfetchable just stays a plain link.
@@ -81,6 +71,23 @@ export default async function ReviewDetailPage({
   const linkedSeconds = (hackatimeStats?.projects ?? [])
     .filter((p) => project.hackatime_project_names.includes(p.name))
     .reduce((sum, p) => sum + p.total_seconds, 0);
+
+  // The same total with `category = "ai coding"` dropped. Shown beside the
+  // headline figure rather than replacing it: which of the two is payable is a
+  // program decision, not a technical one, and silently swapping the number a
+  // reviewer has been reading would change what students get paid without
+  // anybody deciding to. `awardedCoins` below still runs on `linkedSeconds`.
+  const linkedHumanSeconds = (hackatimeStats?.projectsExcludingAi ?? [])
+    .filter((p) => project.hackatime_project_names.includes(p.name))
+    .reduce((sum, p) => sum + p.total_seconds, 0);
+  const hasHumanSeconds =
+    (hackatimeStats?.projectsExcludingAi ?? []).length > 0;
+
+  // What the agent wrote, straight from Hackatime. Scoped by the linked project
+  // names alone -- see getProjectAiTelemetry for why there is no date floor.
+  const aiTelemetry = owner
+    ? await getAiTelemetryForStudent(owner, project.hackatime_project_names)
+    : null;
 
   const priorReviews = await getReviewsForProject(project.id);
   const isOwnProject = project.student_id === student.id;
@@ -155,6 +162,14 @@ export default async function ReviewDetailPage({
             </p>
             <p className="text-xs text-zinc-500">hours logged</p>
           </div>
+          {hasHumanSeconds ? (
+            <div>
+              <p className="text-xl text-zinc-900">
+                {(linkedHumanSeconds / 3600).toFixed(2)}
+              </p>
+              <p className="text-xs text-zinc-500">hours without AI</p>
+            </div>
+          ) : null}
           <div>
             <p className="text-xl text-zinc-900">{journalEntries.length}</p>
             <p className="text-xs text-zinc-500">journal entries</p>
@@ -171,20 +186,12 @@ export default async function ReviewDetailPage({
           </div>
         </div>
 
-        {attributionRepos.length > 0 ? (
-          <div className="mt-4 border-t border-zinc-200 pt-3">
-            <p className="text-xs font-semibold text-zinc-900">
-              Code authorship
-            </p>
-            <div className="mt-2">
-              <AttributionSummary
-                repos={attributionRepos}
-                verifications={attributionVerifications}
-                forReviewer
-              />
-            </div>
+        <div className="mt-4 border-t border-zinc-200 pt-3">
+          <p className="text-xs font-semibold text-zinc-900">AI usage</p>
+          <div className="mt-2">
+            <HackatimeAiSummary telemetry={aiTelemetry} forReviewer />
           </div>
-        ) : null}
+        </div>
       </section>
 
       <section className="flex flex-col gap-4">

@@ -14,17 +14,35 @@ import { EDITOR_TOOLS, buildSetupCommands, type EditorTool } from "@/lib/editors
 // the computer they already set up, or a different one? Rather than explain the
 // ambiguity and make the student resolve it (what the old amber warning box
 // did, badly), the page picks the overwhelmingly common answer as the default:
-// a student with a key is adding another app to the machine they already set
-// up, which needs no key and no installer, just one command. The rarer case
-// gets a quiet link, and only that path shows a warning -- because only that
-// path can break anything.
+// a student with a WORKING machine is adding another app to it, which needs no
+// key and no installer, just one command. The rarer case gets a quiet link, and
+// only that path shows a warning -- because only that path can break anything.
+//
+// "Working" is the load-bearing word, and getting it wrong cost a student two
+// days. The gate used to be "does a key exist", which is not the same question
+// and is wrong in the direction that fails silently: a key is issued the moment
+// the picker is opened, and it is shown exactly once. Open the picker, do not
+// run the commands, come back later, and the page now believes you have a
+// configured computer. It then hands over the short path -- which for Claude
+// Code is `plugin marketplace add` and `plugin install`, and no `configure` --
+// so the plugin installs, the hooks fire, every edit is recorded to disk, and
+// not one byte is ever sent, because the endpoint and key it would need were
+// never written. Nothing anywhere reports an error. The site just says
+// "connected, waiting for its first edit" forever.
+//
+// `keyEverUsed` is the honest version of the question: the server sets
+// last_used_at when a machine authenticates with the key, so it is proof that
+// some machine got all the way through setup. When it is false there is
+// nothing to protect and rotating is free, so we issue a fresh key and show the
+// full install -- no warning, because a key no machine has ever used cannot be
+// broken by replacing it.
 export default function EditorSetup({
   continueHref,
-  hasExistingKey,
+  keyEverUsed,
   keyPrefix,
 }: {
   continueHref: string;
-  hasExistingKey: boolean;
+  keyEverUsed: boolean;
   keyPrefix: string | null;
 }) {
   const [selected, setSelected] = useState<EditorTool | null>(null);
@@ -67,9 +85,11 @@ export default function EditorSetup({
       body: JSON.stringify({ slug: tool.slug }),
     }).catch(() => {});
 
-    // First-ever setup: nothing exists to break, so skip the question entirely
-    // and just issue the key.
-    if (!hasExistingKey && key === null) await generateKey();
+    // No machine has ever reported with this student's key, so there is nothing
+    // a rotation could break. Issue one and show the full install, exactly as
+    // for a first-ever setup -- an abandoned key and no key are the same
+    // situation from here.
+    if (!keyEverUsed && key === null) await generateKey();
   }
 
   function markNoLogo(slug: string) {
@@ -83,10 +103,16 @@ export default function EditorSetup({
 
   if (selected) {
     const commands = origin ? buildSetupCommands(selected, { key, origin }) : [];
-    const waitingOnKey = !hasExistingKey && !key && keyBusy;
-    // A student with a key who has not asked for a new computer is being shown
-    // the short "add this app to the machine you already set up" path.
-    const shortPath = hasExistingKey && !key;
+    // No working machine and no key in hand. The commands are deliberately
+    // withheld here rather than rendered without the `configure` step: an
+    // install that cannot report is the failure this whole component exists to
+    // prevent, and handing one over because a fetch failed would reintroduce it
+    // through the back door.
+    const needsKey = !keyEverUsed && !key;
+    // A student with a key some machine has actually reported with, who has not
+    // asked for a new computer, is being shown the short "add this app to the
+    // computer you already set up" path.
+    const shortPath = keyEverUsed && !key;
 
     return (
       <div className="flex flex-col gap-6 text-sm">
@@ -132,9 +158,25 @@ export default function EditorSetup({
           </p>
         ) : null}
 
-        {waitingOnKey ? (
-          <div className="rounded border border-dashed border-zinc-300 px-3 py-4 text-xs text-zinc-500">
-            Generating your key…
+        {needsKey ? (
+          <div className="flex flex-col gap-2 rounded border border-dashed border-zinc-300 px-3 py-4 text-xs text-zinc-500">
+            {keyBusy ? (
+              "Generating your key…"
+            ) : (
+              <>
+                <span>
+                  Your setup commands need a key, and this one could not be
+                  generated. Nothing is installed until you have it.
+                </span>
+                <button
+                  type="button"
+                  onClick={generateKey}
+                  className="w-fit rounded border border-zinc-900 px-3 py-1.5 text-zinc-900 transition-colors hover:bg-zinc-900 hover:text-white"
+                >
+                  Try again
+                </button>
+              </>
+            )}
           </div>
         ) : commands.length ? (
           <div className="flex flex-col gap-4">

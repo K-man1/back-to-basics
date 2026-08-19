@@ -19,6 +19,7 @@ export default function DashboardNav({
     { href: "/dashboard/explore", label: "Explore" },
     ...(showReview ? [{ href: "/dashboard/review", label: "Review" }] : []),
     { href: "/dashboard/shop", label: "Shop" },
+    { href: "/docs", label: "Docs" },
     { href: "/dashboard/settings", label: "Settings" },
   ];
 
