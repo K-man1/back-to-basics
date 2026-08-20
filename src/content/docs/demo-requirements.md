@@ -7,7 +7,7 @@ Drop in the **deployed link** so a reviewer can click it and play with your pr
 A few things that **won't** pass for software, so you don't get caught out:
 
 - A bare code repo, a `/tree` or `/blob` browse page, or a raw source file (like `bagel.cpp`). Link the running site instead. A GitHub `/releases` or `/tags` page, or a direct download of a compiled build (`.exe`, `.dmg`, `.apk`, a `.zip` of the binary) is fine when your project is a downloadable app.
-- A **video**. Videos are only build proof for hardware, never a software demo**.**
+- A **video**.
 - A free host that sleeps when idle (Render, Replit, Glitch, and similar). It works when awake, but a reviewer opening it later often finds it down and fines it. Prefer a host that stays up: GitHub Pages, Netlify, Vercel, or Cloudflare Pages.
 
 The playable link is **always required** for software ships.

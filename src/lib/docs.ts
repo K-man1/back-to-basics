@@ -2,62 +2,68 @@
 // docs-content.ts, because the sidebar is a client component and anything it
 // imports has to stay free of node:fs.
 // The student handbook. Pages are plain markdown in src/content/docs, and the
-// nesting below is the only place the order and titles live — the sidebar, the
+// list below is the only place the order and titles live — the sidebar, the
 // static params and the per-page lookup all read from it, so adding a page is
 // a new .md file plus one entry here.
-export type DocNode = {
+//
+// Flat on purpose. Pages used to nest under other pages, which meant a sidebar
+// entry was a link and a folder at once and its depth was doing two jobs:
+// "click me" and "these belong to me". Sections are labels only — never links —
+// so anything you can click is a page, and every page sits at one depth.
+export type DocPage = {
   slug: string;
   title: string;
-  children?: DocNode[];
 };
 
-export const DOC_TREE: DocNode[] = [
+export type DocSection = {
+  label: string;
+  pages: DocPage[];
+};
+
+export const DOCS_INDEX: DocPage = {
+  slug: "index",
+  title: "Welcome to Back to Basics!",
+};
+
+export const DOC_SECTIONS: DocSection[] = [
   {
-    slug: "how-it-works-beginners",
-    title: "How it Works (Beginners)",
-    children: [{ slug: "token-calculations", title: "Token Calculations" }],
+    label: "Start here",
+    pages: [
+      DOCS_INDEX,
+      { slug: "how-it-works-beginners", title: "How it Works (Beginners)" },
+      { slug: "how-it-works", title: "How it Works" },
+    ],
   },
   {
-    slug: "how-it-works",
-    title: "How it Works",
-  },
-  {
-    slug: "fixing-my-project",
-    title: "Fixing My Project",
-    children: [
-      {
-        slug: "github-repo-requirements",
-        title: "Github Repo Requirements",
-        children: [{ slug: "demo-requirements", title: "Demo Requirements" }],
-      },
+    label: "Returned projects",
+    pages: [
+      { slug: "fixing-my-project", title: "Fixing My Project" },
+      { slug: "github-repo-requirements", title: "Github Repo Requirements" },
+      { slug: "demo-requirements", title: "Demo Requirements" },
       { slug: "readme-guide", title: "README Guide" },
       { slug: "lack-of-polish", title: "Lack of Polish" },
       { slug: "ai", title: "AI" },
     ],
   },
   {
-    slug: "guides",
-    title: "Guides",
+    label: "More",
+    pages: [
+      { slug: "token-calculations", title: "Token Calculations" },
+      { slug: "guides", title: "Guides" },
+    ],
   },
 ];
-
-export const DOCS_INDEX: DocNode = {
-  slug: "index",
-  title: "Welcome to Back to Basics!",
-};
 
 export function docHref(slug: string): string {
   return slug === DOCS_INDEX.slug ? "/docs" : `/docs/${slug}`;
 }
 
-// Depth-first walk, so callers get the pages in the same order they're listed
-// in the sidebar.
-export function flattenDocs(nodes: DocNode[] = DOC_TREE): DocNode[] {
-  return nodes.flatMap((node) => [node, ...flattenDocs(node.children ?? [])]);
+// Every page, in sidebar order, index included.
+export function flattenDocs(): DocPage[] {
+  return DOC_SECTIONS.flatMap((section) => section.pages);
 }
 
-export function findDoc(slug: string): DocNode | null {
-  if (slug === DOCS_INDEX.slug) return DOCS_INDEX;
+export function findDoc(slug: string): DocPage | null {
   return flattenDocs().find((doc) => doc.slug === slug) ?? null;
 }
 

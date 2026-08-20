@@ -1,7 +1,6 @@
 import Link from "next/link";
 import DocsSidebar from "@/components/DocsSidebar";
 import {
-  DOCS_INDEX,
   extractHeadings,
   flattenDocs,
   plainText,
@@ -19,7 +18,7 @@ export const metadata = {
 // That's what makes search work without an API route: the corpus is a few
 // kilobytes, it's baked into the prerendered HTML, and the client filters it.
 function docEntries(): DocEntry[] {
-  return [DOCS_INDEX, ...flattenDocs()].map((doc) => {
+  return flattenDocs().map((doc) => {
     const markdown = readDoc(doc.slug) ?? "";
     return {
       slug: doc.slug,

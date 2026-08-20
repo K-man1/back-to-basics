@@ -1,12 +1,15 @@
 import { notFound } from "next/navigation";
 import DocMarkdown from "@/components/DocMarkdown";
-import { findDoc, flattenDocs } from "@/lib/docs";
+import { DOCS_INDEX, findDoc, flattenDocs } from "@/lib/docs";
 import { readDoc } from "@/lib/docs-content";
 
-// The tree is fixed at build time, so every doc page is prerendered and an
-// unknown slug 404s instead of hitting the filesystem.
+// The page list is fixed at build time, so every doc page is prerendered and an
+// unknown slug 404s instead of hitting the filesystem. The index is the one
+// page this route doesn't own — it's served at /docs itself.
 export function generateStaticParams() {
-  return flattenDocs().map((doc) => ({ slug: doc.slug }));
+  return flattenDocs()
+    .filter((doc) => doc.slug !== DOCS_INDEX.slug)
+    .map((doc) => ({ slug: doc.slug }));
 }
 
 export const dynamicParams = false;

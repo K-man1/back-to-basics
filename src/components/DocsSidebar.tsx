@@ -2,23 +2,18 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-  DOCS_INDEX,
-  DOC_TREE,
-  docHref,
-  type DocEntry,
-  type DocNode,
-} from "@/lib/docs";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { DOC_SECTIONS, docHref, type DocEntry, type DocPage } from "@/lib/docs";
 
-// The docs table of contents: a search box over every page, the page tree, and
-// — under whichever page you're reading — its section headings, with the one
-// you've scrolled to highlighted.
+// The docs table of contents: a search box over every page, then the pages
+// under their section labels. Pages only — the headings of the page you're on
+// used to unfold under it, so the list changed shape as you navigated and the
+// same indent meant "section of this page" in one place and "different page"
+// in another.
 export default function DocsSidebar({ entries }: { entries: DocEntry[] }) {
   const pathname = usePathname();
   const [query, setQuery] = useState("");
   const [queryPath, setQueryPath] = useState(pathname);
-  const activeHeading = useActiveHeading(pathname);
 
   // Clearing the search on navigation keeps the tree from staying hidden
   // behind a stale result list after you click through to a page. Adjusted
@@ -28,11 +23,6 @@ export default function DocsSidebar({ entries }: { entries: DocEntry[] }) {
     setQueryPath(pathname);
     setQuery("");
   }
-
-  const byslug = useMemo(
-    () => new Map(entries.map((entry) => [entry.slug, entry])),
-    [entries],
-  );
 
   return (
     <>
@@ -44,9 +34,7 @@ export default function DocsSidebar({ entries }: { entries: DocEntry[] }) {
         <div className="mt-4">
           <DocsPanel
             entries={entries}
-            byslug={byslug}
             pathname={pathname}
-            activeHeading={activeHeading}
             query={query}
             onQuery={setQuery}
           />
@@ -56,9 +44,7 @@ export default function DocsSidebar({ entries }: { entries: DocEntry[] }) {
       <div className="hidden shrink-0 lg:sticky lg:top-8 lg:block lg:max-h-[calc(100vh-4rem)] lg:w-60 lg:self-start lg:overflow-y-auto">
         <DocsPanel
           entries={entries}
-          byslug={byslug}
           pathname={pathname}
-          activeHeading={activeHeading}
           query={query}
           onQuery={setQuery}
           shortcut
@@ -70,17 +56,13 @@ export default function DocsSidebar({ entries }: { entries: DocEntry[] }) {
 
 function DocsPanel({
   entries,
-  byslug,
   pathname,
-  activeHeading,
   query,
   onQuery,
   shortcut = false,
 }: {
   entries: DocEntry[];
-  byslug: Map<string, DocEntry>;
   pathname: string;
-  activeHeading: string | null;
   query: string;
   onQuery: (value: string) => void;
   shortcut?: boolean;
@@ -94,21 +76,19 @@ function DocsPanel({
       {query.trim() ? (
         <SearchResults results={results} query={query} />
       ) : (
-        <nav aria-label="Docs" className="mt-6">
-          <p className="mb-3 text-[0.6875rem] tracking-widest text-zinc-400 uppercase">
-            Contents
-          </p>
-          <ul className="flex flex-col text-sm">
-            {[DOCS_INDEX, ...DOC_TREE].map((node) => (
-              <DocsBranch
-                key={node.slug}
-                node={node}
-                pathname={pathname}
-                byslug={byslug}
-                activeHeading={activeHeading}
-              />
-            ))}
-          </ul>
+        <nav aria-label="Docs" className="mt-6 flex flex-col gap-6">
+          {DOC_SECTIONS.map((section) => (
+            <div key={section.label}>
+              <p className="mb-2 text-[0.6875rem] tracking-widest text-zinc-400 uppercase">
+                {section.label}
+              </p>
+              <ul className="flex flex-col text-sm">
+                {section.pages.map((page) => (
+                  <DocsLink key={page.slug} page={page} pathname={pathname} />
+                ))}
+              </ul>
+            </div>
+          ))}
         </nav>
       )}
     </>
@@ -211,20 +191,9 @@ function SearchResults({
   );
 }
 
-function DocsBranch({
-  node,
-  pathname,
-  byslug,
-  activeHeading,
-}: {
-  node: DocNode;
-  pathname: string;
-  byslug: Map<string, DocEntry>;
-  activeHeading: string | null;
-}) {
-  const href = docHref(node.slug);
+function DocsLink({ page, pathname }: { page: DocPage; pathname: string }) {
+  const href = docHref(page.slug);
   const isActive = pathname === href;
-  const sections = isActive ? (byslug.get(node.slug)?.headings ?? []) : [];
 
   return (
     <li>
@@ -239,45 +208,8 @@ function DocsBranch({
             : "border-transparent text-zinc-500 hover:border-zinc-300 hover:text-zinc-900"
         }`}
       >
-        {node.title}
+        {page.title}
       </Link>
-
-      {sections.length > 0 && (
-        <ul className="flex flex-col border-l border-zinc-200 pl-3 text-xs">
-          {sections.map((heading) => {
-            const current = activeHeading === heading.id;
-            return (
-              <li key={heading.id}>
-                <a
-                  href={`#${heading.id}`}
-                  aria-current={current ? "location" : undefined}
-                  className={`-ml-px block border-l-2 py-1 pl-3 transition-colors ${
-                    current
-                      ? "border-zinc-900 text-zinc-900"
-                      : "border-transparent text-zinc-500 hover:text-zinc-900"
-                  }`}
-                >
-                  {heading.text}
-                </a>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-
-      {node.children && node.children.length > 0 && (
-        <ul className="flex flex-col border-l border-zinc-200 pl-3">
-          {node.children.map((child) => (
-            <DocsBranch
-              key={child.slug}
-              node={child}
-              pathname={pathname}
-              byslug={byslug}
-              activeHeading={activeHeading}
-            />
-          ))}
-        </ul>
-      )}
     </li>
   );
 }
@@ -325,61 +257,4 @@ function excerpt(text: string, at: number, length: number): string {
   const end = Math.min(text.length, at + length + 80);
   const slice = text.slice(start, end).trim();
   return `${start > 0 ? "…" : ""}${slice}${end < text.length ? "…" : ""}`;
-}
-
-// Which section the reader is currently in: the last h2 whose top has passed
-// the top of the viewport. Reads the DOM rather than tracking scroll offsets
-// so it stays right as the page reflows.
-function useActiveHeading(pathname: string): string | null {
-  const [active, setActive] = useState<string | null>(null);
-
-  const sync = useCallback(() => {
-    const headings = Array.from(
-      document.querySelectorAll<HTMLElement>("article h2[id]"),
-    );
-    if (headings.length === 0) return setActive(null);
-
-    let current = headings[0];
-    for (const heading of headings) {
-      if (heading.getBoundingClientRect().top <= 96) current = heading;
-    }
-
-    // The last screenful is a special case: several sections can share it and
-    // none of them can be scrolled to the top, so the reading position alone
-    // picks the wrong one. If the reader jumped here from the contents, honour
-    // the heading they asked for; otherwise they scrolled to the end, so light
-    // up the final section.
-    const atBottom =
-      window.innerHeight + window.scrollY >=
-      document.documentElement.scrollHeight - 2;
-    if (atBottom) {
-      const hash = decodeURIComponent(window.location.hash.slice(1));
-      const jumped = headings.find((heading) => heading.id === hash);
-      return setActive((jumped ?? headings[headings.length - 1]).id);
-    }
-
-    setActive(current.id);
-  }, []);
-
-  useEffect(() => {
-    let frame = 0;
-    const onScroll = () => {
-      cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(sync);
-    };
-
-    // Through onScroll rather than straight to sync(), so the first read
-    // happens on the next frame — after the browser has settled any scroll
-    // restoration or hash jump.
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll);
-    return () => {
-      cancelAnimationFrame(frame);
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onScroll);
-    };
-  }, [sync, pathname]);
-
-  return active;
 }

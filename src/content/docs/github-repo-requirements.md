@@ -24,5 +24,3 @@ All projects must have all source code on Github. Here are the requirements:
     - Keep **related code together**, even in `src/`.
     - Build output, caches and other **generated files shouldn’t clutter** the source directories.
     - Keep the root clean with **project-wide config** and documentation.
-
-[Demo Requirements](/docs/demo-requirements)
