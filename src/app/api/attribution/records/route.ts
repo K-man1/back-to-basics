@@ -4,6 +4,7 @@ import {
   studentIdForKey,
   type LedgerRecord,
 } from "@/lib/attribution";
+import { aiPluginOffResponse } from "@/app/api/attribution/guard";
 
 // Receives ledger records streamed live from the `ai-attribution` plugin.
 //
@@ -33,6 +34,8 @@ interface Body {
 }
 
 export async function POST(req: NextRequest) {
+  const off = aiPluginOffResponse();
+  if (off) return off;
   const header = req.headers.get("authorization") ?? "";
   const token = header.startsWith("Bearer ") ? header.slice(7).trim() : "";
   if (!token) {

@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { getOrCreateStudent } from "@/lib/students";
 import { markAgentConnected } from "@/lib/attribution";
 import { EDITOR_TOOLS } from "@/lib/editors";
+import { aiPluginOffResponse } from "@/app/api/attribution/guard";
 
 // Records that the student set up a given AI app, so Settings can list it.
 //
@@ -15,6 +16,8 @@ import { EDITOR_TOOLS } from "@/lib/editors";
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
+  const off = aiPluginOffResponse();
+  if (off) return off;
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "not signed in" }, { status: 401 });

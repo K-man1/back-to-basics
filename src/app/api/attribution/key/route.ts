@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { getOrCreateStudent } from "@/lib/students";
 import { issueKey } from "@/lib/attribution";
+import { aiPluginOffResponse } from "@/app/api/attribution/guard";
 
 // Issues (or rotates) this student's plugin key.
 //
@@ -13,6 +14,8 @@ import { issueKey } from "@/lib/attribution";
 export const dynamic = "force-dynamic";
 
 export async function POST() {
+  const off = aiPluginOffResponse();
+  if (off) return off;
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "not signed in" }, { status: 401 });

@@ -4,6 +4,7 @@ import { getHackatimeStatsForStudent } from "@/lib/hackatime";
 import { getKeyInfo, listReposByStudent, toRepoChoices } from "@/lib/attribution";
 import { createProjectAction } from "@/app/dashboard/actions";
 import ProjectFormFields from "@/components/ProjectFormFields";
+import { AI_PLUGIN_ENABLED } from "@/lib/features";
 
 export default async function NewProjectPage() {
   const session = await auth();
@@ -15,10 +16,12 @@ export default async function NewProjectPage() {
     session.user.name ?? null,
     session.user.email ?? null,
   );
+  // Both attribution reads only feed the repo picker, which does not render
+  // while the plugin is off.
   const [hackatimeStats, attributionRepos, attributionKey] = await Promise.all([
     getHackatimeStatsForStudent(student),
-    listReposByStudent(student.id),
-    getKeyInfo(student.id),
+    AI_PLUGIN_ENABLED ? listReposByStudent(student.id) : [],
+    AI_PLUGIN_ENABLED ? getKeyInfo(student.id) : null,
   ]);
 
   return (

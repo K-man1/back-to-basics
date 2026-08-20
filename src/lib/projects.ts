@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "@/lib/supabase";
+import { AI_PLUGIN_ENABLED } from "@/lib/features";
 
 export interface Project {
   id: string;
@@ -37,7 +38,13 @@ export function missingSubmitRequirements(
   // A reviewer grading Proof needs to know what the agent wrote, so a project
   // has to say which repositories it was built in before it can be submitted.
   // Selecting none is not the same as "no AI" — it's an unanswered question.
-  if (!project.attribution_repo_keys?.length) missing.push("AI usage");
+  //
+  // Only a real requirement while the plugin is on. With it off there is no
+  // picker to answer the question with, so demanding an answer would block
+  // every submission on a field nobody can fill in.
+  if (AI_PLUGIN_ENABLED && !project.attribution_repo_keys?.length) {
+    missing.push("AI usage");
+  }
   if (journalEntryCount === 0) missing.push("journal entry");
   return missing;
 }

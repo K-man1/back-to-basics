@@ -69,7 +69,8 @@ const FAQS = [
 export default async function Home() {
   const session = await auth();
   if (session?.user?.id) {
-    // Dashboard layout handles routing a brand-new student to /editors first.
+    // Dashboard layout handles routing a brand-new student to /editors first,
+    // when the AI plugin feature is on (src/lib/features.ts).
     redirect("/dashboard");
   }
 

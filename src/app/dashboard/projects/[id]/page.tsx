@@ -17,6 +17,7 @@ import {
   type JournalEntry,
 } from "@/lib/journal";
 import { awardedCoins, bestCaseCoins } from "@/lib/currency";
+import { AI_PLUGIN_ENABLED } from "@/lib/features";
 import { LEVEL_MAX, levelLabel, axisBreakdown } from "@/lib/rubric";
 import { getReviewsForProject } from "@/lib/reviews";
 import { normalizeExternalUrl } from "@/lib/url";
@@ -178,9 +179,11 @@ export default async function ProjectDetailPage({
 
   const hackatimeStats = await getHackatimeStatsForStudent(student);
 
+  // Only feed the repo picker inside ProjectEditor, which is hidden while the
+  // plugin is off — see src/lib/features.ts.
   const [attributionRepos, attributionKey] = await Promise.all([
-    listReposByStudent(student.id),
-    getKeyInfo(student.id),
+    AI_PLUGIN_ENABLED ? listReposByStudent(student.id) : [],
+    AI_PLUGIN_ENABLED ? getKeyInfo(student.id) : null,
   ]);
 
   const linkedSeconds = (hackatimeStats?.projects ?? [])
@@ -189,9 +192,10 @@ export default async function ProjectDetailPage({
 
   // What the agent wrote in this project, per Hackatime. Scoped by the same
   // linked project names as linkedSeconds, so the two tiles below describe the
-  // same work. `attributionRepos` is still read above, but only to drive the
-  // repo picker and the "plugin installed" hint in the editor — no number on
-  // this page comes from it any more.
+  // same work. This comes from Hackatime's heartbeats, not from the
+  // ai-attribution plugin, so it is unaffected by AI_PLUGIN_ENABLED —
+  // `attributionRepos` above only ever drove the repo picker and the "plugin
+  // installed" hint in the editor, and no number on this page comes from it.
   const aiTelemetry = await getAiTelemetryForStudent(
     student,
     project.hackatime_project_names,

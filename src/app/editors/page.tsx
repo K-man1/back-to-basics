@@ -1,7 +1,9 @@
+import { notFound } from "next/navigation";
 import { signIn, auth } from "@/auth";
 import EditorSetup from "@/components/EditorSetup";
 import { getOrCreateStudent } from "@/lib/students";
 import { getKeyInfo } from "@/lib/attribution";
+import { AI_PLUGIN_ENABLED } from "@/lib/features";
 
 // The AI-app picker: a new student's first stop after signing in (see
 // dashboard/layout.tsx), also reachable any time from Settings.
@@ -17,6 +19,10 @@ export default async function EditorsPage({
 }: {
   searchParams: Promise<{ next?: string }>;
 }) {
+  // With the plugin off there is nothing to set up, and every link into this
+  // page is gated too — so anyone arriving has a stale bookmark.
+  if (!AI_PLUGIN_ENABLED) notFound();
+
   const session = await auth();
   const { next } = await searchParams;
   const continueHref = safeNext(next);

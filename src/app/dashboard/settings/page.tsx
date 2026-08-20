@@ -3,6 +3,7 @@ import { getOrCreateStudent } from "@/lib/students";
 import { getHackatimeStatsForStudent } from "@/lib/hackatime";
 import { getKeyInfo, listAgentsForStudent } from "@/lib/attribution";
 import { EDITOR_TOOLS } from "@/lib/editors";
+import { AI_PLUGIN_ENABLED } from "@/lib/features";
 import RelativeTime from "@/components/RelativeTime";
 import ThemeToggle from "@/components/ThemeToggle";
 
@@ -18,11 +19,14 @@ export default async function SettingsPage() {
   );
 
   const hackatimeStats = await getHackatimeStatsForStudent(student);
-  const agents = await listAgentsForStudent(student.id);
+
+  // Both of these only feed the "AI apps" card, so skip the queries entirely
+  // rather than fetching rows for a card that will not render.
+  const agents = AI_PLUGIN_ENABLED ? await listAgentsForStudent(student.id) : [];
   // Whether any computer has ever authenticated with this student's key. The
   // agent rows above cannot answer this: they are written when an app is picked
   // on this page, which is a claim about intent, not about a machine.
-  const keyInfo = await getKeyInfo(student.id);
+  const keyInfo = AI_PLUGIN_ENABLED ? await getKeyInfo(student.id) : null;
   const keyEverUsed = keyInfo?.last_used_at != null;
 
   return (
@@ -51,6 +55,7 @@ export default async function SettingsPage() {
         ) : null}
       </div>
 
+      {AI_PLUGIN_ENABLED ? (
       <div className="rounded border border-zinc-200 p-4 text-sm">
         <p className="font-semibold text-zinc-900">AI apps</p>
 
@@ -129,6 +134,7 @@ export default async function SettingsPage() {
           Set up {agents.length ? "another" : "an"} AI app
         </a>
       </div>
+      ) : null}
 
       <div className="rounded border border-zinc-200 p-4 text-sm">
         <p className="font-semibold text-zinc-900">Appearance</p>

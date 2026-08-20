@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isAdminRequest } from "@/lib/admin-auth";
 import { recordVerifications, type VerificationResult } from "@/lib/attribution";
+import { aiPluginOffResponse } from "@/app/api/attribution/guard";
 
 // Receives verification results from the worker.
 //
@@ -13,6 +14,8 @@ import { recordVerifications, type VerificationResult } from "@/lib/attribution"
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
+  const off = aiPluginOffResponse();
+  if (off) return off;
   if (!isAdminRequest(req)) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }

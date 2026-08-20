@@ -14,6 +14,7 @@ import {
   ProjectFields,
 } from "@/lib/projects";
 import { normalizeExternalUrl } from "@/lib/url";
+import { AI_PLUGIN_ENABLED } from "@/lib/features";
 import {
   createJournalEntry,
   updateJournalEntry,
@@ -41,7 +42,15 @@ function fieldsFromFormData(formData: FormData): ProjectFields {
     github_url: normalizeExternalUrl(String(formData.get("github_url") ?? "")),
     demo_url: normalizeExternalUrl(String(formData.get("demo_url") ?? "")),
     hackatime_project_names: formData.getAll("hackatime_project").map(String),
-    attribution_repo_keys: formData.getAll("attribution_repo").map(String),
+    // Omitted, not emptied, while the plugin is off. The picker that posts
+    // these is hidden, so getAll would return [] on every save and quietly
+    // erase the repo keys already stored — which the student could not see or
+    // undo, and which would not come back when the flag is flipped on again.
+    // Leaving the key out of the object means updateProject never touches the
+    // column at all.
+    ...(AI_PLUGIN_ENABLED
+      ? { attribution_repo_keys: formData.getAll("attribution_repo").map(String) }
+      : {}),
   };
 }
 

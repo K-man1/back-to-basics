@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isAdminRequest } from "@/lib/admin-auth";
 import { listPendingVerifications } from "@/lib/attribution";
+import { aiPluginOffResponse } from "@/app/api/attribution/guard";
 
 // Work queue for the verification worker: which repos to clone, and which
 // commit SHAs we have already seen for each.
@@ -12,6 +13,8 @@ import { listPendingVerifications } from "@/lib/attribution";
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
+  const off = aiPluginOffResponse();
+  if (off) return off;
   if (!isAdminRequest(req)) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }

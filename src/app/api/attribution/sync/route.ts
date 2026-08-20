@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { studentIdForKey, upsertSyncedRepos, type SyncedProject } from "@/lib/attribution";
+import { aiPluginOffResponse } from "@/app/api/attribution/guard";
 
 // Receives the project index from the `ai-attribution` Claude Code plugin.
 //
@@ -18,6 +19,8 @@ export const dynamic = "force-dynamic";
 const MAX_BODY_BYTES = 512 * 1024;
 
 export async function POST(req: NextRequest) {
+  const off = aiPluginOffResponse();
+  if (off) return off;
   const header = req.headers.get("authorization") ?? "";
   const token = header.startsWith("Bearer ") ? header.slice(7).trim() : "";
   if (!token) {

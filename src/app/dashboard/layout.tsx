@@ -4,6 +4,7 @@ import DashboardNav from "@/components/DashboardNav";
 import { getOrCreateStudent } from "@/lib/students";
 import { getReviewerForStudent } from "@/lib/reviewers";
 import { approvedCoinsForStudent } from "@/lib/balance";
+import { AI_PLUGIN_ENABLED } from "@/lib/features";
 
 export default async function DashboardLayout({
   children,
@@ -44,7 +45,7 @@ export default async function DashboardLayout({
     session.user.name ?? null,
     session.user.email ?? null,
   );
-  if (student.isNew) {
+  if (AI_PLUGIN_ENABLED && student.isNew) {
     redirect("/editors?next=/dashboard");
   }
 

@@ -3,6 +3,7 @@ import HackatimeProjectPicker from "@/components/HackatimeProjectPicker";
 import type { AttributionRepoChoice } from "@/lib/attribution";
 import type { HackatimeProjectStat } from "@/lib/hackatime";
 import type { Project } from "@/lib/projects";
+import { AI_PLUGIN_ENABLED } from "@/lib/features";
 
 export default function ProjectFormFields({
   project,
@@ -75,16 +76,22 @@ export default function ProjectFormFields({
         />
       </div>
 
-      <div className="flex flex-col gap-1">
-        {/* Like the description: fine to leave empty while drafting, checked
-            by missingSubmitRequirements when you submit. */}
-        <p>AI Usage (required to submit)</p>
-        <AttributionRepoPicker
-          repos={attributionRepos}
-          initialSelected={project?.attribution_repo_keys ?? []}
-          installed={attributionInstalled}
-        />
-      </div>
+      {/* With the plugin off there is no repo list to pick from, and no
+          "AI usage" submit requirement to satisfy (see
+          missingSubmitRequirements). The form posts no attribution_repo
+          fields, so saving simply leaves the column as it was. */}
+      {AI_PLUGIN_ENABLED ? (
+        <div className="flex flex-col gap-1">
+          {/* Like the description: fine to leave empty while drafting, checked
+              by missingSubmitRequirements when you submit. */}
+          <p>AI Usage (required to submit)</p>
+          <AttributionRepoPicker
+            repos={attributionRepos}
+            initialSelected={project?.attribution_repo_keys ?? []}
+            installed={attributionInstalled}
+          />
+        </div>
+      ) : null}
     </div>
   );
 }
