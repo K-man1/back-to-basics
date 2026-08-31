@@ -1,6 +1,8 @@
 # Back To Basics
-This is the website for the (upcoming) Back to Basics website! It's not fully complete, but it has project creation, Hackatime setup, reviewing, 
+This is the website for the (upcoming) Back to Basics YSWS! It's not fully complete, but it has project creation, Hackatime setup, reviewing, 
 currency calculator, dark mode, and most of the docs.
+
+See it here: https://back-to-basics-cyan.vercel.app/
 
 ## Stack
 - Next.js + React, TypeScript
